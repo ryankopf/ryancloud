@@ -5,6 +5,7 @@ use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
 use crate::models::auth::{is_logged_in, login as login_handler, logout as logout_handler};
+use serde::Deserialize;
 use actix_multipart::Multipart;
 use futures_util::stream::StreamExt as _;
 use actix_files::NamedFile;
@@ -12,6 +13,15 @@ use std::env;
 use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
 use std::fs;
+use actix_web::Error as ActixError;
+
+
+#[derive(serde::Deserialize)]
+struct LoginForm {
+    username: String,
+    password: String,
+}
+
 // Serve login form (GET)
 async fn login_form() -> HttpResponse {
     let html = r#"
@@ -25,7 +35,6 @@ async fn login_form() -> HttpResponse {
     "#;
     HttpResponse::Ok().content_type("text/html").body(html)
 }
-use actix_web::Error as ActixError;
 
 // Unified handler: serve file if path is file, list if directory
 async fn browse(
@@ -184,8 +193,9 @@ async fn main() -> std::io::Result<()> {
                 // Login form (GET)
                 .route("/login", web::get().to(login_form))
                 // Login handler (POST)
-                .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<(String, String)>| async move {
-                    login_handler(web::Data::new(data.db.clone()), session, form).await
+                .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<LoginForm>| async move {
+                    let tuple_form = (form.username.clone(), form.password.clone());
+                    login_handler(web::Data::new(data.db.clone()), session, web::Form(tuple_form)).await
                 }))
                 // Logout handler (POST)
                 .route("/logout", web::post().to(|session: Session| async move {
