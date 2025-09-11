@@ -1,5 +1,3 @@
-// Serve login form (GET)
-// ...existing code...
 mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
@@ -14,12 +12,47 @@ use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
 use std::fs;
 use actix_web::Error as ActixError;
+use crate::models::user::ActiveModel;
+use sea_orm::{Set, ActiveModelTrait};
+use bcrypt;
 
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct LoginForm {
     username: String,
     password: String,
+}
+
+// Signup form (GET)
+async fn signup_form() -> HttpResponse {
+    let html = r#"
+        <h1>Sign Up</h1>
+        <form action="/signup" method="post">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Sign Up</button>
+        </form>
+        <a href="/">Back</a>
+    "#;
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
+
+// Signup handler (POST)
+async fn signup(
+    data: web::Data<AppState>,
+    form: web::Form<LoginForm>,
+) -> Result<HttpResponse, ActixError> {
+    let password_hash = bcrypt::hash(&form.password, bcrypt::DEFAULT_COST).unwrap();
+    let user = ActiveModel {
+        username: Set(form.username.clone()),
+        password_hash: Set(password_hash),
+        access_level: Set("None".to_string()),
+        ..Default::default()
+    };
+    match user.insert(&data.db).await {
+        Ok(_) => Ok(HttpResponse::Found().append_header(("Location", "/login")).finish()),
+        Err(e) => Ok(HttpResponse::InternalServerError().body(format!("Error: {}", e))),
+    }
 }
 
 // Serve login form (GET)
@@ -201,6 +234,10 @@ async fn main() -> std::io::Result<()> {
                 .route("/logout", web::post().to(|session: Session| async move {
                     logout_handler(session).await
                 }))
+                // Signup form (GET)
+                .route("/signup", web::get().to(signup_form))
+                // Signup handler (POST)
+                .route("/signup", web::post().to(signup))
                 .route("/upload", web::post().to(upload))
                 .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
                     browse(data, req, None, session)
