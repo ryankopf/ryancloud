@@ -1,12 +1,26 @@
+// Serve login form (GET)
+async fn login_form() -> HttpResponse {
+    let html = r#"
+        <h1>Login</h1>
+        <form action=\"/login\" method=\"post\">
+            <input type=\"text\" name=\"username\" placeholder=\"Username\" required><br>
+            <input type=\"password\" name=\"password\" placeholder=\"Password\" required><br>
+            <button type=\"submit\">Login</button>
+        </form>
+        <a href=\"/\">Back</a>
+    "#;
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
 mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
-use crate::models::auth::is_logged_in;
+use crate::models::auth::{is_logged_in, login as login_handler, logout as logout_handler};
 use actix_multipart::Multipart;
 use futures_util::stream::StreamExt as _;
 use actix_files::NamedFile;
 use std::env;
+use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
 use std::fs;
 use actix_web::Error as ActixError;
@@ -61,6 +75,19 @@ async fn browse(
             "#;
             html += r#"<form action="/logout" method="post"><button type="submit">Logout</button></form>"#;
         }
+// Serve login form (GET)
+async fn login_form() -> HttpResponse {
+    let html = r#"
+        <h1>Login</h1>
+        <form action="/login" method="post">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+        <a href="/">Back</a>
+    "#;
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
         Ok(HttpResponse::Ok().content_type("text/html").body(html))
     }
 }
@@ -126,6 +153,7 @@ async fn upload(
 
 struct AppState {
     folder: PathBuf,
+    db: DatabaseConnection,
 }
 
 #[actix_web::main]
@@ -137,8 +165,12 @@ async fn main() -> std::io::Result<()> {
         env::current_dir().unwrap()
     };
 
+    // Set up database connection (update with your DB URL as needed)
+    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://users.db".to_string());
+    let db = Database::connect(&db_url).await.expect("Failed to connect to DB");
+
     println!("Serving folder: {:?}", folder);
-    let state = web::Data::new(AppState { folder });
+    let state = web::Data::new(AppState { folder, db });
 
     HttpServer::new(move || {
         App::new()
@@ -159,6 +191,16 @@ async fn main() -> std::io::Result<()> {
                 ),
             )
             .route("/upload", web::post().to(upload))
+            // Login form (GET)
+            .route("/login", web::get().to(login_form))
+            // Login handler (POST)
+            .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<(String, String)>| async move {
+                login_handler(web::Data::new(data.db.clone()), session, form).await
+            }))
+            // Logout handler (POST)
+            .route("/logout", web::post().to(|session: Session| async move {
+                logout_handler(session).await
+            }))
     })
     .bind(("0.0.0.0", 80))?
     .run()
