@@ -101,7 +101,7 @@ async fn browse(
                 }
             }
             Err(e) => {
-                html += &format!("<li>Error reading directory: {}</li>", e);
+                html += &format!("<li>Error reading directory '{}': {}</li>", target.display(), e);
             }
         }
         html += "</ul>";
@@ -119,19 +119,6 @@ async fn browse(
             "#;
             html += r#"<form action="/logout" method="post"><button type="submit">Logout</button></form>"#;
         }
-// Serve login form (GET)
-async fn login_form() -> HttpResponse {
-    let html = r#"
-        <h1>Login</h1>
-        <form action="/login" method="post">
-            <input type="text" name="username" placeholder="Username" required><br>
-            <input type="password" name="password" placeholder="Password" required><br>
-            <button type="submit">Login</button>
-        </form>
-        <a href="/">Back</a>
-    "#;
-    HttpResponse::Ok().content_type("text/html").body(html)
-}
         Ok(HttpResponse::Ok().content_type("text/html").body(html))
     }
 }
@@ -167,7 +154,7 @@ async fn upload(
         let mut f = match std::fs::File::create(&filepath) {
             Ok(file) => file,
             Err(e) => {
-                results.push((filename.clone(), format!("Error: {}", e)));
+                results.push((filename.clone(), format!("Error creating '{}': {}", filepath.display(), e)));
                 continue;
             }
         };
@@ -177,7 +164,7 @@ async fn upload(
             let data = chunk?;
             use std::io::Write;
             if let Err(e) = f.write_all(&data) {
-                results.push((filename.clone(), format!("Write error: {}", e)));
+                results.push((filename.clone(), format!("Write error to '{}': {}", filepath.display(), e)));
                 break;
             }
         }
