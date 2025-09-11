@@ -211,7 +211,9 @@ async fn main() -> std::io::Result<()> {
 
     // Set up database connection (update with your DB URL as needed)
     let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://users.db".to_string());
-    let db = Database::connect(&db_url).await.expect("Failed to connect to DB");
+    let db = Database::connect(&db_url).await.unwrap_or_else(|e| {
+        panic!("Failed to connect to DB at '{}': {}", db_url, e);
+    });
 
     println!("Serving folder: {:?}", folder);
     let state = web::Data::new(AppState { folder, db });
