@@ -187,8 +187,9 @@ struct AppState {
     db: DatabaseConnection,
 }
 
+
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() {
     let args: Vec<String> = env::args().collect();
     let folder = if args.len() > 1 {
         PathBuf::from(&args[1])
@@ -205,7 +206,7 @@ async fn main() -> std::io::Result<()> {
     println!("Serving folder: {:?}", folder);
     let state = web::Data::new(AppState { folder, db });
 
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
             .wrap(SessionMiddleware::new(
@@ -239,8 +240,18 @@ async fn main() -> std::io::Result<()> {
                         },
                     ),
                 )
-    })
-    .bind(("0.0.0.0", 80))?
-    .run()
-    .await
+    });
+
+    let server = match server.bind(("0.0.0.0", 80)) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    if let Err(e) = server.run().await {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
 }
