@@ -7,6 +7,7 @@ pub struct Model {
     pub id: i32,
     pub username: String,
     pub password_hash: String,
+    pub access_level: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter)]
