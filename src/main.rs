@@ -1,16 +1,5 @@
 // Serve login form (GET)
-async fn login_form() -> HttpResponse {
-    let html = r#"
-        <h1>Login</h1>
-        <form action=\"/login\" method=\"post\">
-            <input type=\"text\" name=\"username\" placeholder=\"Username\" required><br>
-            <input type=\"password\" name=\"password\" placeholder=\"Password\" required><br>
-            <button type=\"submit\">Login</button>
-        </form>
-        <a href=\"/\">Back</a>
-    "#;
-    HttpResponse::Ok().content_type("text/html").body(html)
-}
+// ...existing code...
 mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
@@ -23,6 +12,19 @@ use std::env;
 use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
 use std::fs;
+// Serve login form (GET)
+async fn login_form() -> HttpResponse {
+    let html = r#"
+        <h1>Login</h1>
+        <form action="/login" method="post">
+            <input type="text" name="username" placeholder="Username" required><br>
+            <input type="password" name="password" placeholder="Password" required><br>
+            <button type="submit">Login</button>
+        </form>
+        <a href="/">Back</a>
+    "#;
+    HttpResponse::Ok().content_type("text/html").body(html)
+}
 use actix_web::Error as ActixError;
 
 // Unified handler: serve file if path is file, list if directory
@@ -179,28 +181,28 @@ async fn main() -> std::io::Result<()> {
                 actix_session::storage::CookieSessionStore::default(),
                 Key::from(&[0; 64]),
             ))
-            .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
-                browse(data, req, None, session)
-            }))
-            .route(
-                "/{path:.*}",
-                web::get().to(
-                    |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
-                        browse(data, req, Some(path), session)
-                    },
-                ),
-            )
-            .route("/upload", web::post().to(upload))
-            // Login form (GET)
-            .route("/login", web::get().to(login_form))
-            // Login handler (POST)
-            .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<(String, String)>| async move {
-                login_handler(web::Data::new(data.db.clone()), session, form).await
-            }))
-            // Logout handler (POST)
-            .route("/logout", web::post().to(|session: Session| async move {
-                logout_handler(session).await
-            }))
+                // Login form (GET)
+                .route("/login", web::get().to(login_form))
+                // Login handler (POST)
+                .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<(String, String)>| async move {
+                    login_handler(web::Data::new(data.db.clone()), session, form).await
+                }))
+                // Logout handler (POST)
+                .route("/logout", web::post().to(|session: Session| async move {
+                    logout_handler(session).await
+                }))
+                .route("/upload", web::post().to(upload))
+                .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
+                    browse(data, req, None, session)
+                }))
+                .route(
+                    "/{path:.*}",
+                    web::get().to(
+                        |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                            browse(data, req, Some(path), session)
+                        },
+                    ),
+                )
     })
     .bind(("0.0.0.0", 80))?
     .run()
