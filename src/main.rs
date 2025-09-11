@@ -1,4 +1,8 @@
+mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
+use actix_session::{Session, SessionMiddleware};
+use actix_web::cookie::Key;
+use crate::models::auth::is_logged_in;
 use actix_multipart::Multipart;
 use futures_util::stream::StreamExt as _;
 use actix_files::NamedFile;
@@ -12,6 +16,7 @@ async fn browse(
     data: web::Data<AppState>,
     req: HttpRequest,
     path: Option<web::Path<String>>,
+    session: Session,
 ) -> Result<HttpResponse, ActixError> {
     let mut target = data.folder.clone();
     let subpath = path.as_ref().map(|p| p.as_str()).unwrap_or("");
@@ -42,14 +47,20 @@ async fn browse(
             }
         }
         html += "</ul>";
-        // Add upload form
-        html += r#"
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="files" multiple>
-            <button type="submit">Upload</button>
-        </form>
-        "#;
-
+        // Add login button
+        if !is_logged_in(&session) {
+            html += r#"<a href="/login">Login</a>"#;
+        }
+        // Only show upload if logged in
+        if is_logged_in(&session) {
+            html += r#"
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="files" multiple>
+                <button type="submit">Upload</button>
+            </form>
+            "#;
+            html += r#"<form action="/logout" method="post"><button type="submit">Logout</button></form>"#;
+        }
         Ok(HttpResponse::Ok().content_type("text/html").body(html))
     }
 }
@@ -132,14 +143,18 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest| {
-                browse(data, req, None)
+            .wrap(SessionMiddleware::new(
+                actix_session::storage::CookieSessionStore::default(),
+                Key::from(&[0; 64]),
+            ))
+            .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
+                browse(data, req, None, session)
             }))
             .route(
                 "/{path:.*}",
                 web::get().to(
-                    |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>| {
-                        browse(data, req, Some(path))
+                    |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                        browse(data, req, Some(path), session)
                     },
                 ),
             )

@@ -12,5 +12,6 @@ actix-multipart = "0.7.2"
 futures-util = "0.3.31"
 sea-orm = "0.12"
 sea-orm-macros = "0.12"
-actix-session = "0.7"
+actix-session = { version = "0.7", features = ["cookie-session"] }
 argon2 = "0.5"
+bcrypt = "0.17.1"

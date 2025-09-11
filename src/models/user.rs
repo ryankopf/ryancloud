@@ -12,4 +12,12 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {}
 
+impl sea_orm::RelationTrait for Relation {
+    fn def(&self) -> sea_orm::RelationDef {
+        match self {
+            _ => unreachable!("No relations defined for user")
+        }
+    }
+}
+
 impl ActiveModelBehavior for ActiveModel {}
