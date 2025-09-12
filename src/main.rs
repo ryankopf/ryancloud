@@ -1,3 +1,5 @@
+const HTML_HEADER: &str = r#"<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>File Server</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='bg-light'><div class='container py-4'><h1 class='mb-4'>File Server</h1>"#;
+const HTML_FOOTER: &str = "</div></body></html>";
 mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
@@ -87,7 +89,9 @@ async fn browse(
         Ok(NamedFile::open(target)?.into_response(&req))
     } else {
         // List directory contents
-        let mut html = String::from("<h1>File List</h1><ul>");
+    let mut html = String::new();
+    html += HTML_HEADER;
+    html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
         match fs::read_dir(&target) {
             Ok(entries) => {
                 for entry in entries.flatten() {
@@ -97,29 +101,71 @@ async fn browse(
                     } else {
                         format!("/{}/{}", subpath, file_name)
                     };
-                    html += &format!("<li><a href=\"{}\">{}</a></li>", link, file_name);
+                    html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
                 }
             }
             Err(e) => {
-                html += &format!("<li>Error reading directory '{}': {}</li>", target.display(), e);
+                html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
             }
         }
-        html += "</ul>";
+        html += "</ul></div>";
         // Add login button
         if !is_logged_in(&session) {
-            html += r#"<a href="/login">Login</a>"#;
+            html += r#"<a class='btn btn-primary mt-3' href="/login">Login</a>"#;
         }
-        // Only show upload if logged in
+        // Only show upload and create folder if logged in
         if is_logged_in(&session) {
             html += r#"
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <input type="file" name="files" multiple>
-                <button type="submit">Upload</button>
-            </form>
+            <div class="actions py-4">
+                <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
+                <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
+            </div>
+            <div class='collapse my-4' id='uploadForm'>
+                <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
+                    <input type='file' name='files' multiple class='form-control mb-2'>
+                    <button type='submit' class='btn btn-success'>Upload</button>
+                </form>
+            </div>
+            <div class='collapse my-4' id='folderForm'>
+                <form action='/create_folder' method='post' class='mb-2'>
+                    <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
+                    <button type='submit' class='btn btn-secondary'>Create Folder</button>
+                </form>
+            </div>
+            <form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
+            <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
             "#;
-            html += r#"<form action="/logout" method="post"><button type="submit">Logout</button></form>"#;
         }
+        html += HTML_FOOTER;
         Ok(HttpResponse::Ok().content_type("text/html").body(html))
+    }
+}
+// Handle folder creation
+async fn create_folder(
+    data: web::Data<AppState>,
+    form: web::Form<std::collections::HashMap<String, String>>,
+    session: Session,
+) -> Result<HttpResponse, ActixError> {
+    if !is_logged_in(&session) {
+        return Ok(HttpResponse::Unauthorized().body("Login required"));
+    }
+    let folder_name = form.get("folder_name").map(|s| s.trim()).filter(|s| !s.is_empty());
+    let folder_name = match folder_name {
+        Some(name) => name,
+        None => return Ok(HttpResponse::BadRequest().body("Invalid folder name")),
+    };
+    // Basic validation: no path traversal, only allow simple names
+    if folder_name.contains('/') || folder_name.contains('\\') || folder_name.contains("..") {
+        return Ok(HttpResponse::BadRequest().body("Invalid folder name"));
+    }
+    let mut target = data.folder.clone();
+    target = target.join(folder_name);
+    if target.exists() {
+        return Ok(HttpResponse::BadRequest().body("Folder already exists"));
+    }
+    match std::fs::create_dir(&target) {
+        Ok(_) => Ok(HttpResponse::Found().append_header(("Location", "/")).finish()),
+        Err(e) => Ok(HttpResponse::InternalServerError().body(format!("Error creating folder: {}", e))),
     }
 }
 
@@ -172,11 +218,14 @@ async fn upload(
         results.push((filename.clone(), "Uploaded".to_string()));
     }
 
-    let mut html = String::from("<h1>Upload Results</h1><ul>");
+    let mut html = String::new();
+    html += HTML_HEADER;
+    html += "<div class='card'><div class='card-header'>Upload Results</div><ul class='list-group list-group-flush'>";
     for (file, status) in results {
-        html += &format!("<li>{}: {}</li>", file, status);
+        html += &format!("<li class='list-group-item'>{}: {}</li>", file, status);
     }
-    html += "</ul><a href=\"/\">Back</a>";
+    html += "</ul></div><a class='btn btn-primary mt-3' href='/'>Back</a>";
+    html += HTML_FOOTER;
 
     Ok(HttpResponse::Ok().content_type("text/html").body(html))
 }
@@ -224,6 +273,7 @@ async fn main() {
             .route("/signup", web::get().to(signup_form))
             .route("/signup", web::post().to(signup))
             .route("/upload", web::post().to(upload))
+            .route("/create_folder", web::post().to(create_folder))
             .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
                 browse(data, req, None, session)
             }))
