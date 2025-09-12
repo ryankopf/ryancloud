@@ -213,33 +213,28 @@ async fn main() {
                 actix_session::storage::CookieSessionStore::default(),
                 Key::from(&[0; 64]),
             ))
-                // Login form (GET)
-                .route("/login", web::get().to(login_form))
-                // Login handler (POST)
-                .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<LoginForm>| async move {
-                    let tuple_form = (form.username.clone(), form.password.clone());
-                    login_handler(web::Data::new(data.db.clone()), session, web::Form(tuple_form)).await
-                }))
-                // Logout handler (POST)
-                .route("/logout", web::post().to(|session: Session| async move {
-                    logout_handler(session).await
-                }))
-                // Signup form (GET)
-                .route("/signup", web::get().to(signup_form))
-                // Signup handler (POST)
-                .route("/signup", web::post().to(signup))
-                .route("/upload", web::post().to(upload))
-                .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
-                    browse(data, req, None, session)
-                }))
-                .route(
-                    "/{path:.*}",
-                    web::get().to(
-                        |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
-                            browse(data, req, Some(path), session)
-                        },
-                    ),
-                )
+            .route("/login", web::get().to(login_form))
+            .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<LoginForm>| async move {
+                let tuple_form = (form.username.clone(), form.password.clone());
+                login_handler(web::Data::new(data.db.clone()), session, web::Form(tuple_form)).await
+            }))
+            .route("/logout", web::post().to(|session: Session| async move {
+                logout_handler(session).await
+            }))
+            .route("/signup", web::get().to(signup_form))
+            .route("/signup", web::post().to(signup))
+            .route("/upload", web::post().to(upload))
+            .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
+                browse(data, req, None, session)
+            }))
+            .route(
+                "/{path:.*}",
+                web::get().to(
+                    |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                        browse(data, req, Some(path), session)
+                    },
+                ),
+            )
     });
 
     let server = match server.bind(("0.0.0.0", 80)) {
