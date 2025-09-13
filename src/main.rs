@@ -258,10 +258,12 @@ async fn main() {
     let server = HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .wrap(SessionMiddleware::new(
+            .wrap(SessionMiddleware::builder(
                 actix_session::storage::CookieSessionStore::default(),
                 Key::from(&[0; 64]),
-            ))
+            )
+            .cookie_secure(false)
+            .build())
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<LoginForm>| async move {
                 let tuple_form = (form.username.clone(), form.password.clone());
