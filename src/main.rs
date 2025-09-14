@@ -10,8 +10,9 @@ use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
 mod controllers;
 use controllers::files::{browse, upload, create_folder};
-use controllers::login::{login_form, login as login_handler, logout as logout_handler, is_logged_in};
+use controllers::login::{login_form, login, logout, is_logged_in};
 use controllers::signup::{signup, signup_form};
+use actix_web::middleware::Logger;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -45,17 +46,20 @@ async fn main() {
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default()) // Enable verbose logging
             .app_data(state.clone())
-            .wrap(SessionMiddleware::builder(
-                actix_session::storage::CookieSessionStore::default(),
-                Key::from(&[0; 64]),
+            .wrap(
+                SessionMiddleware::builder(
+                    actix_session::storage::CookieSessionStore::default(),
+                    Key::from(&[0; 64]),
+                )
+                .cookie_secure(false)
+                .build()
             )
-            .cookie_secure(false)
-            .build())
             .route("/login", web::get().to(login_form))
-            .route("/login", web::post().to(login_handler))
+            .route("/login", web::post().to(login))
             .route("/logout", web::post().to(|session: Session| async move {
-                logout_handler(session).await
+                logout(session).await
             }))
             .route("/signup", web::get().to(signup_form))
             .route("/signup", web::post().to(signup))

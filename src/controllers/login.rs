@@ -30,7 +30,7 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
 pub async fn login(
     db: web::Data<DatabaseConnection>,
     session: Session,
-    form: web::Form<LoginForm>, // Updated to use LoginForm
+    form: web::Form<LoginForm>,
 ) -> Result<HttpResponse, Error> {
     let username = form.username.clone();
     let password = form.password.clone();
