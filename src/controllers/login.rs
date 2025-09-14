@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Error};
 use actix_session::Session;
-use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
+use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, DatabaseConnection};
 use crate::models::user;
 use crate::LoginForm;
 // use bcrypt::{hash, verify, DEFAULT_COST};
@@ -28,23 +28,26 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
 
 // Login handler
 pub async fn login(
-    db: web::Data<DatabaseConnection>,
+    db: web::Data<DatabaseConnection>, // Use DatabaseConnection directly
     session: Session,
     form: web::Form<LoginForm>,
 ) -> Result<HttpResponse, Error> {
     let username = form.username.clone();
     let password = form.password.clone();
+
     let user = user::Entity::find()
         .filter(user::Column::Username.eq(username.clone()))
         .one(db.get_ref())
         .await
         .map_err(|e| actix_web::error::ErrorInternalServerError(e))?;
+
     if let Some(u) = user {
         if verify_password(&u.password_hash, &password) {
             session.insert("user_id", u.id)?;
             return Ok(HttpResponse::Found().append_header(("Location", "/")).finish());
         }
     }
+
     Ok(HttpResponse::Unauthorized().body("Invalid credentials"))
 }
 

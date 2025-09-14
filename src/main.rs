@@ -42,12 +42,16 @@ async fn main() {
     });
 
     println!("Serving folder: {:?}", folder);
-    let state = web::Data::new(AppState { folder, db });
+
+    // Register separate web::Data instances
+    let db_data = web::Data::new(db);
+    let folder_data = web::Data::new(folder);
 
     let server = HttpServer::new(move || {
         App::new()
             .wrap(Logger::default()) // Enable verbose logging
-            .app_data(state.clone())
+            .app_data(db_data.clone())
+            .app_data(folder_data.clone())
             .wrap(
                 SessionMiddleware::builder(
                     actix_session::storage::CookieSessionStore::default(),
@@ -65,13 +69,13 @@ async fn main() {
             .route("/signup", web::post().to(signup))
             .route("/upload", web::post().to(upload))
             .route("/create_folder", web::post().to(create_folder))
-            .route("/", web::get().to(|data: web::Data<AppState>, req: HttpRequest, session: Session| {
+            .route("/", web::get().to(|data: web::Data<PathBuf>, req: HttpRequest, session: Session| {
                 browse(data, req, None, session)
             }))
             .route(
                 "/{path:.*}",
                 web::get().to(
-                    |data: web::Data<AppState>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                    |data: web::Data<PathBuf>, req: HttpRequest, path: web::Path<String>, session: Session| {
                         browse(data, req, Some(path), session)
                     },
                 ),

@@ -6,15 +6,16 @@ use actix_files::NamedFile;
 use std::fs;
 use actix_web::Error as ActixError;
 use crate::{AppState, HTML_FOOTER, HTML_HEADER, is_logged_in};
+use std::path::PathBuf; // Import PathBuf
 
 // Unified handler: serve file if path is file, list if directory
 pub async fn browse(
-    data: web::Data<AppState>,
+    folder: web::Data<PathBuf>,
     req: HttpRequest,
     path: Option<web::Path<String>>,
     session: Session,
-) -> Result<HttpResponse, ActixError> {
-    let mut target = data.folder.clone();
+) -> HttpResponse {
+    let mut target = folder.get_ref().clone();
     let subpath = path.as_ref().map(|p| p.as_str()).unwrap_or("");
     if !subpath.is_empty() {
         target = target.join(subpath);
@@ -22,12 +23,14 @@ pub async fn browse(
 
     if target.is_file() {
         // Serve file for download
-        Ok(NamedFile::open(target)?.into_response(&req))
+        NamedFile::open(target)
+            .map(|file| file.into_response(&req))
+            .unwrap_or_else(|_| HttpResponse::NotFound().finish())
     } else {
         // List directory contents
-    let mut html = String::new();
-    html += HTML_HEADER;
-    html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
+        let mut html = String::new();
+        html += HTML_HEADER;
+        html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
         match fs::read_dir(&target) {
             Ok(entries) => {
                 for entry in entries.flatten() {
@@ -73,7 +76,7 @@ pub async fn browse(
             "#;
         }
         html += HTML_FOOTER;
-        Ok(HttpResponse::Ok().content_type("text/html").body(html))
+        HttpResponse::Ok().content_type("text/html").body(html)
     }
 }
 // Handle folder creation
