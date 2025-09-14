@@ -1,188 +1,23 @@
 const HTML_HEADER: &str = r#"<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>File Server</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='bg-light'><div class='container py-4'><h1 class='mb-4'>File Server</h1>"#;
 const HTML_FOOTER: &str = "</div></body></html>";
 mod models;
-use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
+use actix_web::{web, App, HttpServer, HttpRequest};
 use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
-// use crate::models::auth::{is_logged_in, login as login_handler, logout as logout_handler};
 use serde::Deserialize;
-use actix_multipart::Multipart;
-use futures_util::stream::StreamExt as _;
-use actix_files::NamedFile;
 use std::env;
 use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
-use std::fs;
-use actix_web::Error as ActixError;
 mod controllers;
-use controllers::signup::{signup, signup_form};
+use controllers::files::{browse, upload, create_folder};
 use controllers::login::{login_form, login as login_handler, logout as logout_handler, is_logged_in};
+use controllers::signup::{signup, signup_form};
 
 #[derive(Deserialize)]
 struct LoginForm {
     username: String,
     password: String,
 }
-
-// Unified handler: serve file if path is file, list if directory
-async fn browse(
-    data: web::Data<AppState>,
-    req: HttpRequest,
-    path: Option<web::Path<String>>,
-    session: Session,
-) -> Result<HttpResponse, ActixError> {
-    let mut target = data.folder.clone();
-    let subpath = path.as_ref().map(|p| p.as_str()).unwrap_or("");
-    if !subpath.is_empty() {
-        target = target.join(subpath);
-    }
-
-    if target.is_file() {
-        // Serve file for download
-        Ok(NamedFile::open(target)?.into_response(&req))
-    } else {
-        // List directory contents
-    let mut html = String::new();
-    html += HTML_HEADER;
-    html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
-        match fs::read_dir(&target) {
-            Ok(entries) => {
-                for entry in entries.flatten() {
-                    let file_name = entry.file_name().to_string_lossy().to_string();
-                    let link = if subpath.is_empty() {
-                        format!("/{}", file_name)
-                    } else {
-                        format!("/{}/{}", subpath, file_name)
-                    };
-                    html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
-                }
-            }
-            Err(e) => {
-                html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
-            }
-        }
-        html += "</ul></div>";
-        // Add login button
-        if !is_logged_in(&session) {
-            html += r#"<a class='btn btn-primary mt-3' href="/login">Login</a>"#;
-        }
-        // Only show upload and create folder if logged in
-        if is_logged_in(&session) {
-            html += r#"
-            <div class="actions py-4">
-                <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
-                <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
-            </div>
-            <div class='collapse my-4' id='uploadForm'>
-                <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
-                    <input type='file' name='files' multiple class='form-control mb-2'>
-                    <button type='submit' class='btn btn-success'>Upload</button>
-                </form>
-            </div>
-            <div class='collapse my-4' id='folderForm'>
-                <form action='/create_folder' method='post' class='mb-2'>
-                    <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
-                    <button type='submit' class='btn btn-secondary'>Create Folder</button>
-                </form>
-            </div>
-            <form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
-            <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
-            "#;
-        }
-        html += HTML_FOOTER;
-        Ok(HttpResponse::Ok().content_type("text/html").body(html))
-    }
-}
-// Handle folder creation
-async fn create_folder(
-    data: web::Data<AppState>,
-    form: web::Form<std::collections::HashMap<String, String>>,
-    session: Session,
-) -> Result<HttpResponse, ActixError> {
-    if !is_logged_in(&session) {
-        return Ok(HttpResponse::Unauthorized().body("Login required"));
-    }
-    let folder_name = form.get("folder_name").map(|s| s.trim()).filter(|s| !s.is_empty());
-    let folder_name = match folder_name {
-        Some(name) => name,
-        None => return Ok(HttpResponse::BadRequest().body("Invalid folder name")),
-    };
-    // Basic validation: no path traversal, only allow simple names
-    if folder_name.contains('/') || folder_name.contains('\\') || folder_name.contains("..") {
-        return Ok(HttpResponse::BadRequest().body("Invalid folder name"));
-    }
-    let mut target = data.folder.clone();
-    target = target.join(folder_name);
-    if target.exists() {
-        return Ok(HttpResponse::BadRequest().body("Folder already exists"));
-    }
-    match std::fs::create_dir(&target) {
-        Ok(_) => Ok(HttpResponse::Found().append_header(("Location", "/")).finish()),
-        Err(e) => Ok(HttpResponse::InternalServerError().body(format!("Error creating folder: {}", e))),
-    }
-}
-
-// Handle file uploads
-async fn upload(
-    data: web::Data<AppState>,
-    mut payload: Multipart,
-) -> Result<HttpResponse, ActixError> {
-    let mut results = Vec::new();
-    let target_dir = &data.folder;
-
-    while let Some(item) = payload.next().await {
-        let mut field = item?;
-
-        // Extract filename into an owned String
-        let filename: String = match field.content_disposition()
-            .and_then(|cd| cd.get_filename().map(|f| f.to_string()))
-        {
-            Some(fname) => fname,
-            None => {
-                results.push(("<unknown>".to_string(), "No filename".to_string()));
-                continue;
-            }
-        };
-
-        let filepath = target_dir.join(&filename);
-        if filepath.exists() {
-            results.push((filename.clone(), "File exists, skipped".to_string()));
-            continue;
-        }
-
-        let mut f = match std::fs::File::create(&filepath) {
-            Ok(file) => file,
-            Err(e) => {
-                results.push((filename.clone(), format!("Error creating '{}': {}", filepath.display(), e)));
-                continue;
-            }
-        };
-
-        // Now safely consume the stream
-        while let Some(chunk) = field.next().await {
-            let data = chunk?;
-            use std::io::Write;
-            if let Err(e) = f.write_all(&data) {
-                results.push((filename.clone(), format!("Write error to '{}': {}", filepath.display(), e)));
-                break;
-            }
-        }
-
-        results.push((filename.clone(), "Uploaded".to_string()));
-    }
-
-    let mut html = String::new();
-    html += HTML_HEADER;
-    html += "<div class='card'><div class='card-header'>Upload Results</div><ul class='list-group list-group-flush'>";
-    for (file, status) in results {
-        html += &format!("<li class='list-group-item'>{}: {}</li>", file, status);
-    }
-    html += "</ul></div><a class='btn btn-primary mt-3' href='/'>Back</a>";
-    html += HTML_FOOTER;
-
-    Ok(HttpResponse::Ok().content_type("text/html").body(html))
-}
-
 
 struct AppState {
     folder: PathBuf,
@@ -218,10 +53,7 @@ async fn main() {
             .cookie_secure(false)
             .build())
             .route("/login", web::get().to(login_form))
-            .route("/login", web::post().to(|data: web::Data<AppState>, session: Session, form: web::Form<LoginForm>| async move {
-                let tuple_form = (form.username.clone(), form.password.clone());
-                login_handler(web::Data::new(data.db.clone()), session, web::Form(tuple_form)).await
-            }))
+            .route("/login", web::post().to(login_handler))
             .route("/logout", web::post().to(|session: Session| async move {
                 logout_handler(session).await
             }))

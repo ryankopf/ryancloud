@@ -2,6 +2,7 @@ use actix_web::{web, HttpResponse, Error};
 use actix_session::Session;
 use sea_orm::{DatabaseConnection, EntityTrait, QueryFilter, ColumnTrait};
 use crate::models::user;
+use crate::LoginForm;
 // use bcrypt::{hash, verify, DEFAULT_COST};
 use bcrypt::verify;
 
@@ -29,9 +30,10 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
 pub async fn login(
     db: web::Data<DatabaseConnection>,
     session: Session,
-    form: web::Form<(String, String)>, // (username, password)
+    form: web::Form<LoginForm>, // Updated to use LoginForm
 ) -> Result<HttpResponse, Error> {
-    let (username, password) = form.into_inner();
+    let username = form.username.clone();
+    let password = form.password.clone();
     let user = user::Entity::find()
         .filter(user::Column::Username.eq(username.clone()))
         .one(db.get_ref())
