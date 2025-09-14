@@ -4,7 +4,7 @@ mod models;
 use actix_web::{web, App, HttpServer, HttpResponse, HttpRequest, Result};
 use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
-use crate::models::auth::{is_logged_in, login as login_handler, logout as logout_handler};
+// use crate::models::auth::{is_logged_in, login as login_handler, logout as logout_handler};
 use serde::Deserialize;
 use actix_multipart::Multipart;
 use futures_util::stream::StreamExt as _;
@@ -16,7 +16,7 @@ use std::fs;
 use actix_web::Error as ActixError;
 mod controllers;
 use controllers::signup::{signup, signup_form};
-use controllers::login::{login_form};
+use controllers::login::{login_form, login as login_handler, logout as logout_handler, is_logged_in};
 
 #[derive(Deserialize)]
 struct LoginForm {
