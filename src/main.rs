@@ -60,11 +60,8 @@ async fn main() {
                 .build()
             )
             .configure(controllers::videos::video_routes)
-            .route("/login", web::get().to(login_form))
-            .route("/login", web::post().to(login))
-            .route("/logout", web::post().to(|session: Session| async move {
-                logout(session).await
-            }))
+            .configure(controllers::clips::clips_routes)
+            .configure(controllers::login::login_routes)
             .route("/signup", web::get().to(signup_form))
             .route("/signup", web::post().to(signup))
             .route("/upload", web::post().to(upload))

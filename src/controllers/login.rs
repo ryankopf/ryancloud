@@ -61,3 +61,12 @@ pub async fn logout(session: Session) -> Result<HttpResponse, Error> {
 pub fn is_logged_in(session: &Session) -> bool {
     session.get::<i32>("user_id").unwrap_or(None).is_some()
 }
+
+pub fn login_routes(cfg: &mut web::ServiceConfig) {
+    cfg
+        .route("/login", web::get().to(login_form))
+        .route("/login", web::post().to(login))
+        .route("/logout", web::post().to(|session: Session| async move {
+            logout(session).await
+        }));
+}
