@@ -104,7 +104,7 @@ pub async fn create(
     }
 
     // Kick off ffmpeg (async fire-and-forget)
-    match create_video_clip(&source_filename, form.start, form.end, Some(&clip_filename)) {
+    match create_video_clip(&source_filename, form.start, form.end, &clip_filename) {
         Ok(output_path) => {
             HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
         }

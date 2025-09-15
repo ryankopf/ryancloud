@@ -5,7 +5,7 @@ pub fn create_video_clip(
     source: &str,
     start: i64, // Milliseconds
     end: i64,   // Milliseconds
-    output_dir: Option<&str>,
+    output_path: &str, // Full output file path
 ) -> Result<PathBuf, String> {
     let ffmpeg_path = std::env::var("FFMPEG_PATH")
         .map_err(|_| "FFMPEG_PATH not defined in environment".to_string())?;
@@ -15,30 +15,15 @@ pub fn create_video_clip(
         return Err("Invalid clip duration".to_string());
     }
 
-    let source_path = Path::new(source);
+    let output_path = Path::new(output_path);
 
-    // Build the filename: originalstem-start-end.mp4
-    let filename = format!(
-        "{}-{}-{}.mp4",
-        source_path.file_stem().unwrap_or_default().to_string_lossy(),
-        start,
-        end
-    );
-
-    // Default clip directory = <source_parent>/clips
-    let output_path = if let Some(dir) = output_dir {
-        PathBuf::from(dir).join(&filename)
-    } else {
-        let clip_dir = source_path
-            .parent()
-            .unwrap_or_else(|| Path::new("."))
-            .join("clips");
-
-        std::fs::create_dir_all(&clip_dir)
-            .map_err(|e| format!("Failed to create clips dir: {}", e))?;
-
-        clip_dir.join(filename)
-    };
+    // Ensure the parent directory exists
+    if let Some(parent) = output_path.parent() {
+        if !parent.exists() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| format!("Failed to create output directory: {}", e))?;
+        }
+    }
 
     let args = vec![
         "-ss".to_string(),
@@ -62,5 +47,5 @@ pub fn create_video_clip(
         .spawn()
         .map_err(|e| format!("Failed to start ffmpeg: {}", e))?;
 
-    Ok(output_path)
+    Ok(output_path.to_path_buf())
 }
