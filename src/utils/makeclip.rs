@@ -1,11 +1,12 @@
 use std::process::{Command, Stdio};
+use std::path::{Path, PathBuf};
 
 pub fn create_video_clip(
     source: &str,
     start: i64,
     end: i64,
     output_dir: Option<&str>,
-) -> Result<std::path::PathBuf, String> {
+) -> Result<PathBuf, String> {
     let ffmpeg_path = std::env::var("FFMPEG_PATH")
         .map_err(|_| "FFMPEG_PATH not defined in environment".to_string())?;
 
@@ -14,20 +15,29 @@ pub fn create_video_clip(
         return Err("Invalid clip duration".to_string());
     }
 
+    let source_path = Path::new(source);
+
+    // Build the filename: originalstem-start-end.mp4
     let filename = format!(
         "{}-{}-{}.mp4",
-        std::path::PathBuf::from(source)
-            .file_stem()
-            .unwrap_or_default()
-            .to_string_lossy(),
+        source_path.file_stem().unwrap_or_default().to_string_lossy(),
         start,
         end
     );
 
+    // Default clip directory = <source_parent>/clips
     let output_path = if let Some(dir) = output_dir {
-        std::path::PathBuf::from(dir).join(&filename)
+        PathBuf::from(dir).join(&filename)
     } else {
-        std::path::PathBuf::from(&filename)
+        let clip_dir = source_path
+            .parent()
+            .unwrap_or_else(|| Path::new("."))
+            .join("clips");
+
+        std::fs::create_dir_all(&clip_dir)
+            .map_err(|e| format!("Failed to create clips dir: {}", e))?;
+
+        clip_dir.join(filename)
     };
 
     let args = vec![
@@ -42,7 +52,6 @@ pub fn create_video_clip(
         output_path.to_string_lossy().to_string(),
     ];
 
-    // Debug print of full command
     println!("Running command: {} {}", ffmpeg_path, args.join(" "));
 
     Command::new(&ffmpeg_path)
