@@ -104,7 +104,19 @@ pub async fn create(
     }
 
     // Kick off ffmpeg (async fire-and-forget)
-    match create_video_clip(&source_filename, form.start, form.end, &clip_filename) {
+    // Clip in the same directory + "/clips/"
+    let clip_filepath = video_path.parent()
+        .map(|p| {
+            let clips_dir = p.join("clips");
+            if !clips_dir.exists() {
+                if let Err(err) = std::fs::create_dir_all(&clips_dir) {
+                    eprintln!("Failed to create clips directory: {}", err);
+                }
+            }
+            clips_dir.join(&clip_filename).display().to_string()
+        })
+        .unwrap_or_else(|| clip_filename.clone());
+    match create_video_clip(&source_filename, form.start, form.end, &clip_filepath) {
         Ok(output_path) => {
             HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
         }
