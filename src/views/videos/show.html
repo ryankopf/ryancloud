@@ -64,15 +64,16 @@
 <body>
   <div class="container-fluid">
     <!-- Home Icon -->
-    <div class="breadcrumbs" style="position: absolute; top: 10px; left: 10px; z-index: 9;">
-      <a href="/" style="font-size: 24px; text-decoration: none;">🏠</a>
+    <div class="breadcrumbs text-white bg-black" style="position: absolute; top: 10px; left: 10px; z-index: 9;">
+      <a href="/" style="font-size: 16px; text-decoration: none;margin-right:10px;">🏠</a>
+      {{filename}}
       <!-- Additional breadcrumbs can be added here -->
     </div>
     <div class="row">
       <!-- Video Section -->
       <div class="col-10 p-0">
         <div class="video-container">
-          <h1 class="video-title">Video: {{filename}}</h1>
+          <h1 class="video-title"></h1>
           <video id="video" controls>
             <source src="{{filename}}" type="video/mp4">
             Your browser does not support the video tag.
