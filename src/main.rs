@@ -1,6 +1,8 @@
 const HTML_HEADER: &str = r#"<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>File Server</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='bg-light'><div class='container py-4'><h1 class='mb-4'>File Server</h1>"#;
 const HTML_FOOTER: &str = "</div></body></html>";
+mod controllers;
 mod models;
+mod utils;
 use actix_web::{web, App, HttpServer, HttpRequest};
 use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
@@ -8,9 +10,8 @@ use serde::Deserialize;
 use std::env;
 use sea_orm::{Database, DatabaseConnection};
 use std::path::PathBuf;
-mod controllers;
 use controllers::files::{browse, upload, create_folder};
-use controllers::login::{login_form, login, logout, is_logged_in};
+use controllers::login::is_logged_in;
 use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
 

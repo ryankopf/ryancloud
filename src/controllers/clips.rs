@@ -1,8 +1,9 @@
 use actix_web::{get, post, web, HttpResponse};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
-use crate::models::clip;
 use serde::Deserialize;
 use std::path::PathBuf;
+use crate::models::clip;
+use crate::utils::makeclip::create_video_clip;
 
 #[get("/clips/{video_path:.*}")]
 pub async fn index(
@@ -59,6 +60,7 @@ pub async fn create(
     form: web::Form<ClipForm>,
     db: web::Data<DatabaseConnection>,
 ) -> HttpResponse {
+    // Insert into DB
     let new_clip = clip::ActiveModel {
         source_filename: Set(form.source_filename.clone()),
         start: Set(form.start),
@@ -68,11 +70,19 @@ pub async fn create(
         ..Default::default()
     };
 
-    match new_clip.insert(db.get_ref()).await {
-        Ok(_) => HttpResponse::Created().body("Clip created successfully"),
+    if let Err(err) = new_clip.insert(db.get_ref()).await {
+        eprintln!("Error creating clip: {}", err);
+        return HttpResponse::InternalServerError().body("Failed to create clip");
+    }
+
+    // Kick off ffmpeg (async fire-and-forget)
+    match create_video_clip(&form.source_filename, form.start, form.end, None) {
+        Ok(output_path) => {
+            HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
+        }
         Err(err) => {
-            eprintln!("Error creating clip: {}", err);
-            HttpResponse::InternalServerError().body("Failed to create clip")
+            eprintln!("Error spawning ffmpeg: {}", err);
+            HttpResponse::InternalServerError().body(err)
         }
     }
 }
