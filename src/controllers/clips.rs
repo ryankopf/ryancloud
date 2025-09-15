@@ -48,21 +48,23 @@ pub async fn index(
 
 #[derive(Deserialize)]
 pub struct ClipForm {
-    pub source_filename: String,
     pub start: i64,
     pub end: i64,
     pub name: Option<String>,
     pub description: Option<String>,
 }
 
-#[post("/clips")]
+#[post("/clips/{video_path:.*}")]
 pub async fn create(
+    video_path: web::Path<PathBuf>,
     form: web::Form<ClipForm>,
     db: web::Data<DatabaseConnection>,
 ) -> HttpResponse {
+    let source_filename = video_path.display().to_string();
+
     // Insert into DB
     let new_clip = clip::ActiveModel {
-        source_filename: Set(form.source_filename.clone()),
+        source_filename: Set(source_filename.clone()),
         start: Set(form.start),
         end: Set(form.end),
         name: Set(form.name.clone()),
@@ -76,7 +78,7 @@ pub async fn create(
     }
 
     // Kick off ffmpeg (async fire-and-forget)
-    match create_video_clip(&form.source_filename, form.start, form.end, None) {
+    match create_video_clip(&source_filename, form.start, form.end, None) {
         Ok(output_path) => {
             HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
         }

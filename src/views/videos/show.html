@@ -157,17 +157,17 @@
     }
 
     async function saveClip() {
-      const payload = {
+      const params = new URLSearchParams({
         title: clipState.title,
         description: clipState.description,
         start: clipState.start,
         end: clipState.end
-      };
+      });
       try {
-        await fetch(`/clips/${filename}`, {
+        await fetch(`/clips${filename}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString()
         });
         cancelClip(); // reset UI
         document.querySelector(".clips-list")?.dispatchEvent(new Event("load")); // refresh sidebar
