@@ -53,7 +53,7 @@ pub async fn browse(
 
                     if is_video {
                         html += &format!(
-                            "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos/{file_name}' target='_blank'>🎬</a></li>",
+                            "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}' target='_blank'>🎬</a></li>",
                             link = link,
                             file_name = file_name
                         );
