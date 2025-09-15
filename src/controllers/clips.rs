@@ -89,6 +89,7 @@ pub async fn create(
     // Insert into DB
     let new_clip = clip::ActiveModel {
         source_filename: Set(source_filename.clone()),
+        clip_filename: Set(clip_filename.clone()),
         start: Set(form.start),
         end: Set(form.end),
         name: Set(form.name.clone()),
