@@ -14,7 +14,8 @@ use controllers::files::{browse, upload, create_folder};
 use controllers::login::is_logged_in;
 use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
-use dotenv::dotenv;
+use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
+use std::process::Command;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -29,7 +30,27 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() {
-    dotenv().ok(); // Load environment variables from .env
+    match from_path(".env") {
+        Ok(_) => println!("Environment variables loaded from .env"),
+        Err(e) => eprintln!("Warning: Could not load .env file: {}", e),
+    }
+
+    // Check for required environment variables
+    let required_vars = ["FFMPEG_PATH"];
+    for &var in &required_vars {
+        if std::env::var(var).is_err() {
+            eprintln!("Error: Required environment variable '{}' is not set.", var);
+            std::process::exit(1);
+        }
+    }
+
+    // Check if ffmpeg is accessible
+    if let Ok(ffmpeg_path) = std::env::var("FFMPEG_PATH") {
+        if Command::new(&ffmpeg_path).arg("-version").output().is_err() {
+            eprintln!("Error: FFMPEG_PATH is set but the executable is not accessible or invalid.");
+            std::process::exit(1);
+        }
+    }
 
     let args: Vec<String> = env::args().collect();
     let folder = if args.len() > 1 {
