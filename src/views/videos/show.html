@@ -109,7 +109,7 @@
     const clipmakerRoot = document.getElementById('clipmaker-root');
     const filename = "{{filename}}";
 
-    let clipState = { active: false, start: null, end: null, title: "", description: "" };
+    let clipState = { active: false, start: null, end: null, name: "", description: "" };
 
     function renderClipmakerArea() {
       if (!clipState.active) {
@@ -121,9 +121,9 @@
         const saveDisabled = (clipState.start == null || clipState.end == null) ? "disabled" : "";
         clipmakerRoot.innerHTML = `
           <div class="clipmaker-area">
-            <input type="text" class="form-control mb-2" placeholder="Title"
-                   value="${clipState.title}" 
-                   oninput="clipState.title=this.value">
+            <input type="text" class="form-control mb-2" placeholder="Name"
+                   value="${clipState.name}" 
+                   oninput="clipState.name=this.value">
             <textarea class="form-control mb-2" placeholder="Description"
                       oninput="clipState.description=this.value">${clipState.description}</textarea>
             <div class="d-flex justify-content-between mb-2">
@@ -157,7 +157,7 @@
     }
 
     function cancelClip() {
-      clipState = { active: false, start: null, end: null, title: "", description: "" };
+      clipState = { active: false, start: null, end: null, name: "", description: "" };
       renderClipmakerArea();
       renderMarkers();
     }
@@ -169,7 +169,7 @@
       }
 
       const params = new URLSearchParams({
-        title: clipState.title,
+        name: clipState.name,
         description: clipState.description,
         start: Math.floor(clipState.start * 1000), // Convert to milliseconds
         end: Math.floor(clipState.end * 1000)     // Convert to milliseconds
