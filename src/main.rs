@@ -14,6 +14,7 @@ use controllers::files::{browse, upload, create_folder};
 use controllers::login::is_logged_in;
 use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
+use dotenv::dotenv;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -28,6 +29,8 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() {
+    dotenv().ok(); // Load environment variables from .env
+
     let args: Vec<String> = env::args().collect();
     let folder = if args.len() > 1 {
         PathBuf::from(&args[1])
