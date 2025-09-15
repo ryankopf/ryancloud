@@ -77,6 +77,10 @@ pub async fn create(
         return HttpResponse::BadRequest().body("Invalid clip range: 'start' must be less than 'end'");
     }
 
+    if form.name.as_ref().map_or(true, |name| name.trim().is_empty()) {
+        return HttpResponse::BadRequest().body("Clip name cannot be blank");
+    }
+
     // Generate clip filename
     let clip_filename = form.name.as_ref()
         .map(|name| {
