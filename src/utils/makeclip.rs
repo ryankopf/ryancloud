@@ -41,12 +41,12 @@ pub fn create_video_clip(
     };
 
     let args = vec![
+        "-ss".to_string(),
+        format!("{:.3}", start as f64 / 1000.0),
         "-i".to_string(),
         source.to_string(),
-        "-ss".to_string(),
-        format!("{:.3}", start as f64 / 1000.0), // Convert to seconds with milliseconds precision
         "-t".to_string(),
-        format!("{:.3}", duration as f64 / 1000.0), // Convert to seconds with milliseconds precision
+        format!("{:.3}", duration as f64 / 1000.0),
         "-c".to_string(),
         "copy".to_string(),
         output_path.to_string_lossy().to_string(),
