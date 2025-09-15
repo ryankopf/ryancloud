@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 
 pub fn create_video_clip(
     source: &str,
-    start: i64,
-    end: i64,
+    start: i64, // Milliseconds
+    end: i64,   // Milliseconds
     output_dir: Option<&str>,
 ) -> Result<PathBuf, String> {
     let ffmpeg_path = std::env::var("FFMPEG_PATH")
@@ -44,9 +44,9 @@ pub fn create_video_clip(
         "-i".to_string(),
         source.to_string(),
         "-ss".to_string(),
-        start.to_string(),
+        format!("{:.3}", start as f64 / 1000.0), // Convert to seconds with milliseconds precision
         "-t".to_string(),
-        duration.to_string(),
+        format!("{:.3}", duration as f64 / 1000.0), // Convert to seconds with milliseconds precision
         "-c".to_string(),
         "copy".to_string(),
         output_path.to_string_lossy().to_string(),

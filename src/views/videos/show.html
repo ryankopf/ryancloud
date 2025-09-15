@@ -165,8 +165,8 @@
       const params = new URLSearchParams({
         title: clipState.title,
         description: clipState.description,
-        start: Math.floor(clipState.start), // Convert to integer
-        end: Math.floor(clipState.end)     // Convert to integer
+        start: Math.floor(clipState.start * 1000), // Convert to milliseconds
+        end: Math.floor(clipState.end * 1000)     // Convert to milliseconds
       });
 
       try {
