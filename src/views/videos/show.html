@@ -157,22 +157,33 @@
     }
 
     async function saveClip() {
+      if (isNaN(clipState.start) || isNaN(clipState.end)) {
+        console.error("Start and End times must be valid numbers.");
+        return;
+      }
+
       const params = new URLSearchParams({
         title: clipState.title,
         description: clipState.description,
-        start: clipState.start,
-        end: clipState.end
+        start: Math.floor(clipState.start), // Convert to integer
+        end: Math.floor(clipState.end)     // Convert to integer
       });
+
       try {
-        await fetch(`/clips${filename}`, {
+        const response = await fetch(`/clips${filename}`, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: params.toString()
         });
-        cancelClip(); // reset UI
-        document.querySelector(".clips-list")?.dispatchEvent(new Event("load")); // refresh sidebar
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        cancelClip(); // Reset UI
+        document.querySelector(".clips-list")?.dispatchEvent(new Event("load")); // Refresh sidebar
       } catch (err) {
-        alert("Error saving clip: " + err);
+        console.error("Error saving clip:", err);
       }
     }
 

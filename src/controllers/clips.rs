@@ -64,6 +64,15 @@ pub async fn create(
 ) -> HttpResponse {
     let source_filename = video_path.display().to_string();
 
+    // Log incoming data for debugging
+    eprintln!("Received POST request for video_path: {}", source_filename);
+    eprintln!("Form data: start={}, end={}, name={:?}, description={:?}", form.start, form.end, form.name, form.description);
+
+    // Validate form data
+    if form.start >= form.end {
+        return HttpResponse::BadRequest().body("Invalid clip range: 'start' must be less than 'end'");
+    }
+
     // Insert into DB
     let new_clip = clip::ActiveModel {
         source_filename: Set(source_filename.clone()),
