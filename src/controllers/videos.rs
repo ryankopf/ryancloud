@@ -10,10 +10,9 @@ pub async fn show(
     let view_name = "show";
     let form_path = format!("./src/views/{}/{}.html", controller, view_name);
     let content = std::fs::read_to_string(&form_path).unwrap_or_default();
-    println!("Loaded view from: {}", form_path);
-
-    let filename = "sample.mp4"; // Replace with actual filename logic if needed
-    let html = content.replace("{{filename}}", filename);
+    let filename = video_filename.into_inner();
+    let html = content.replace("{{filename}}", &filename);
+    println!("Trying to serve video: {}", filename);
     HttpResponse::Ok().content_type("text/html").body(html)
 }
 
