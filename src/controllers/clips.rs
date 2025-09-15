@@ -19,26 +19,28 @@ pub async fn index(
         .await;
 
     match clips {
-        Ok(clips) if !clips.is_empty() => {
-            let clips_html: String = clips
-                .into_iter()
-                .map(|clip| {
-                    format!(
-                        "<div><h2>{}</h2><p>{}</p><video src='/videos/{}' controls></video></div>",
-                        clip.name.unwrap_or_else(|| "Untitled".to_string()),
-                        clip.description.unwrap_or_else(|| "No description available.".to_string()),
-                        clip.source_filename
-                    )
-                })
-                .collect();
-
+        Ok(clips) => {
+            let clips_html = if !clips.is_empty() {
+                clips
+                    .into_iter()
+                    .map(|clip| {
+                        format!(
+                            "<div><b>{}</b><p>{}</p><video src='/videos/{}' controls></video></div>",
+                            clip.name.unwrap_or_else(|| "Untitled".to_string()),
+                            clip.description.unwrap_or_else(|| "No description available.".to_string()),
+                            clip.source_filename
+                        )
+                    })
+                    .collect::<String>()
+            } else {
+                "<p>No clips found.</p>".to_string()
+            };
             let html = format!(
-                "<html><body><h1>Clips for {}</h1>{}</body></html>",
+                "<html><body><h6>Clips for {}</h6>{}</body></html>",
                 video_path_str, clips_html
             );
             HttpResponse::Ok().content_type("text/html").body(html)
         }
-        Ok(_) => HttpResponse::NotFound().body("No clips found for the given video"),
         Err(err) => {
             eprintln!("Error fetching clips: {}", err);
             HttpResponse::InternalServerError().body("Internal server error")

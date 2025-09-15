@@ -81,12 +81,12 @@
             class="form-control mb-3"
             placeholder="Search clips"
             name="q"
-            hx-get="/clips/{{filename}}"
+            hx-get="/clips{{filename}}"
             hx-trigger="keyup changed delay:300ms"
             hx-target=".clips-list"
             hx-swap="innerHTML">
         <div class="clips-list"
-            hx-get="/clips/{{filename}}"
+            hx-get="/clips{{filename}}"
             hx-trigger="load"
             hx-target="this"
             hx-swap="innerHTML">
