@@ -31,6 +31,8 @@ pub async fn browse(
         let mut html = String::new();
         html += HTML_HEADER;
         html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
+        let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
+
         match fs::read_dir(&target) {
             Ok(entries) => {
                 for entry in entries.flatten() {
@@ -40,7 +42,23 @@ pub async fn browse(
                     } else {
                         format!("/{}/{}", subpath, file_name)
                     };
-                    html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
+
+                    // Check if the file is a video
+                    let is_video = entry
+                        .path()
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| video_extensions.contains(&ext.to_lowercase().as_str()))
+                        .unwrap_or(false);
+
+                    if is_video {
+                        html += &format!(
+                            "<li class='list-group-item'><a href='{}'>{}</a> <a href='/videos/{}' target='_blank'>🎥</a></li>",
+                            link, file_name, file_name
+                        );
+                    } else {
+                        html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
+                    }
                 }
             }
             Err(e) => {
