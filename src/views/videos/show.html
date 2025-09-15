@@ -42,7 +42,7 @@
       border-radius: 0.5rem;
       padding: 1rem;
       box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      min-width: 250px;
+      min-width: 260px;
     }
     .marker {
       position: absolute;
@@ -101,6 +101,7 @@
     const video = document.getElementById('video');
     const markersEl = document.getElementById('markers');
     const clipmakerRoot = document.getElementById('clipmaker-root');
+    const filename = "{{filename}}";
 
     let clipState = { active: false, start: null, end: null, title: "", description: "" };
 
@@ -111,6 +112,7 @@
             <button class="btn btn-primary w-100" onclick="startClip()">Start Clip</button>
           </div>`;
       } else {
+        const saveDisabled = (clipState.start == null || clipState.end == null) ? "disabled" : "";
         clipmakerRoot.innerHTML = `
           <div class="clipmaker-area">
             <input type="text" class="form-control mb-2" placeholder="Title"
@@ -118,11 +120,12 @@
                    oninput="clipState.title=this.value">
             <textarea class="form-control mb-2" placeholder="Description"
                       oninput="clipState.description=this.value">${clipState.description}</textarea>
-            <div class="d-flex justify-content-between">
-              <button class="btn btn-secondary btn-sm" onclick="setStart()">Set Start</button>
+            <div class="d-flex justify-content-between mb-2">
+              <button class="btn btn-success btn-sm" onclick="setStart()">Set Start</button>
               <button class="btn btn-success btn-sm" onclick="setEnd()">Set End</button>
               <button class="btn btn-outline-danger btn-sm" onclick="cancelClip()">Cancel</button>
             </div>
+            <button class="btn btn-primary w-100" onclick="saveClip()" ${saveDisabled}>Save Clip</button>
           </div>`;
       }
     }
@@ -137,11 +140,13 @@
 
     function setStart() {
       clipState.start = video.currentTime;
+      renderClipmakerArea();
       renderMarkers();
     }
 
     function setEnd() {
       clipState.end = video.currentTime;
+      renderClipmakerArea();
       renderMarkers();
     }
 
@@ -149,6 +154,26 @@
       clipState = { active: false, start: null, end: null, title: "", description: "" };
       renderClipmakerArea();
       renderMarkers();
+    }
+
+    async function saveClip() {
+      const payload = {
+        title: clipState.title,
+        description: clipState.description,
+        start: clipState.start,
+        end: clipState.end
+      };
+      try {
+        await fetch(`/clips/${filename}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        cancelClip(); // reset UI
+        document.querySelector(".clips-list")?.dispatchEvent(new Event("load")); // refresh sidebar
+      } catch (err) {
+        alert("Error saving clip: " + err);
+      }
     }
 
     function renderMarkers() {
