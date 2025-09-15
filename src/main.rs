@@ -25,7 +25,6 @@ struct AppState {
     db: DatabaseConnection,
 }
 
-
 #[actix_web::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
@@ -36,7 +35,7 @@ async fn main() {
     };
 
     // Set up database connection (update with your DB URL as needed)
-    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://users.db".to_string());
+    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://ryancloud.db".to_string());
     let db = Database::connect(&db_url).await.unwrap_or_else(|e| {
         panic!("Failed to connect to DB at '{}': {}", db_url, e);
     });
@@ -60,6 +59,7 @@ async fn main() {
                 .cookie_secure(false)
                 .build()
             )
+            .configure(controllers::videos::video_routes)
             .route("/login", web::get().to(login_form))
             .route("/login", web::post().to(login))
             .route("/logout", web::post().to(|session: Session| async move {

@@ -10,15 +10,8 @@ pub struct Model {
     pub access_level: String,
 }
 
-#[derive(Copy, Clone, Debug, EnumIter)]
+#[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {}
 
-impl sea_orm::RelationTrait for Relation {
-    fn def(&self) -> sea_orm::RelationDef {
-        match self {
-            _ => unreachable!("No relations defined for user")
-        }
-    }
-}
 
 impl ActiveModelBehavior for ActiveModel {}

@@ -10,3 +10,5 @@ For example, a video file could have tags like:
 takoyaki, walking, osaka, japan, eating, food closeup, ryan kopf
 
 And maybe even automatic transcriptions.
+
+* Implement clipmaking feature. Have a clip model defining a source, start/end, name, description
