@@ -1,15 +1,12 @@
 use actix_web::{get, web, HttpResponse};
 use std::path::PathBuf;
 
+const SHOW_HTML: &str = include_str!("../views/videos/show.html");
+
 #[get("/videos/{video_path:.*}")]
 pub async fn show(video_path: web::Path<PathBuf>) -> HttpResponse {
-    let controller = "videos";
-    let view_name = "show";
-    let form_path = format!("./src/views/{}/{}.html", controller, view_name);
-    let content = std::fs::read_to_string(&form_path).unwrap_or_default();
-
     let filename = format!("/{}", video_path.display());
-    let html = content.replace("{{filename}}", &filename);
+    let html = SHOW_HTML.replace("{{filename}}", &filename);
 
     println!("Trying to serve video: {}", filename);
 
