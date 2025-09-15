@@ -11,6 +11,7 @@ pub struct Model {
     #[serde(skip)]
     pub working_directory: String,
     pub source_filename: String,
+    pub clip_filename: String,
     pub start: i64,
     pub end: i64,
     pub name: Option<String>,

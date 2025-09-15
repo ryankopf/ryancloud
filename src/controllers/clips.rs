@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::path::PathBuf;
 use crate::models::clip;
 use crate::utils::makeclip::create_video_clip;
+use regex::Regex;
 
 #[get("/clips/{video_path:.*}")]
 pub async fn index(
@@ -76,6 +77,15 @@ pub async fn create(
         return HttpResponse::BadRequest().body("Invalid clip range: 'start' must be less than 'end'");
     }
 
+    // Generate clip filename
+    let clip_filename = form.name.as_ref()
+        .map(|name| {
+            let re = Regex::new(r"[^a-zA-Z0-9]+").unwrap();
+            let sanitized = re.replace_all(name, "-").to_lowercase();
+            format!("{}.mp4", sanitized.trim_matches('-'))
+        })
+        .unwrap_or_else(|| "clip.mp4".to_string());
+
     // Insert into DB
     let new_clip = clip::ActiveModel {
         source_filename: Set(source_filename.clone()),
@@ -93,7 +103,7 @@ pub async fn create(
     }
 
     // Kick off ffmpeg (async fire-and-forget)
-    match create_video_clip(&source_filename, form.start, form.end, None) {
+    match create_video_clip(&source_filename, form.start, form.end, Some(&clip_filename)) {
         Ok(output_path) => {
             HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
         }

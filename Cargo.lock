@@ -2329,6 +2329,7 @@ dependencies = [
  "bcrypt",
  "dotenvy",
  "futures-util",
+ "regex",
  "sea-orm",
  "sea-orm-macros",
  "serde",
