@@ -26,10 +26,10 @@ pub async fn index(
                     .into_iter()
                     .map(|clip| {
                         format!(
-                            "<div><b>{}</b><p>{}</p><video src='/videos/{}' controls></video></div>",
+                            "<div><b>{}</b><p>{}</p><video src='/segments/{}' controls class='w-100'></video></div>",
                             clip.name.unwrap_or_else(|| "Untitled".to_string()),
                             clip.description.unwrap_or_else(|| "No description available.".to_string()),
-                            clip.source_filename
+                            clip.clip_filename,
                         )
                     })
                     .collect::<String>()
@@ -108,13 +108,13 @@ pub async fn create(
     }
 
     // Kick off ffmpeg (async fire-and-forget)
-    // Clip in the same directory + "/clips/"
+    // Clip in the same directory + "/segments/"
     let clip_filepath = video_path.parent()
         .map(|p| {
-            let clips_dir = p.join("clips");
+            let clips_dir = p.join("segments");
             if !clips_dir.exists() {
                 if let Err(err) = std::fs::create_dir_all(&clips_dir) {
-                    eprintln!("Failed to create clips directory: {}", err);
+                    eprintln!("Failed to create segments directory: {}", err);
                 }
             }
             clips_dir.join(&clip_filename).display().to_string()
