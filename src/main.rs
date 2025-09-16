@@ -76,11 +76,12 @@ async fn main() {
                 .cookie_secure(false)
                 .build()
             )
-            .configure(controllers::videos::video_routes)
             .configure(controllers::clips::clips_routes)
-            .configure(controllers::login::login_routes)
             .configure(controllers::files::files_routes)
+            .configure(controllers::login::login_routes)
+            .configure(controllers::search::search_routes)
             .configure(controllers::signup::signup_routes)
+            .configure(controllers::videos::video_routes)
     });
 
     let server = match http_server.bind(("0.0.0.0", 80)) {
