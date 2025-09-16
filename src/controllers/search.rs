@@ -29,9 +29,9 @@ pub async fn index(
     let mut file_results = vec![];
     if let Ok(entries) = fs::read_dir(".") {
         for entry in entries.flatten() {
-            if let Ok(path) = entry.path().into_os_string().into_string() {
-                if path.to_lowercase().contains(&search_term) {
-                    file_results.push(path);
+            if let Ok(file_name) = entry.file_name().into_string() {
+                if file_name.to_lowercase().contains(&search_term) {
+                    file_results.push(file_name);
                 }
             }
         }
