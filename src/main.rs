@@ -8,7 +8,7 @@ use actix_session::{Session, SessionMiddleware};
 use actix_web::cookie::Key;
 use serde::Deserialize;
 use std::env;
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::DatabaseConnection;
 use std::path::PathBuf;
 use controllers::files::{browse, upload, create_folder};
 use controllers::login::is_logged_in;
@@ -16,7 +16,6 @@ use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
-use crate::utils::database::db_path;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -60,10 +59,8 @@ async fn main() {
         env::current_dir().unwrap()
     };
 
-    // Set up database connection (update with your DB URL as needed)
-    let db_url = db_path();
-    let db = Database::connect(&format!("sqlite://{}", db_url.display())).await.unwrap_or_else(|e| {
-        panic!("Failed to connect to DB at '{}': {}", db_url.display(), e);
+    let db = utils::database::get_database().await.unwrap_or_else(|e| {
+        panic!("Failed to connect to database: {}", e);
     });
 
     println!("Serving folder: {:?}", folder);

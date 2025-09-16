@@ -1,4 +1,5 @@
 use directories::ProjectDirs;
+use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, DbErr, Statement};
 use std::path::{PathBuf};
 
 const DB_FILE: &str = "database.sqlite";
@@ -18,13 +19,36 @@ pub fn db_path() -> PathBuf {
     dir.join(DB_FILE)
 }
 
-pub fn get_database() -> PathBuf {
-    db_path()
+pub async fn get_database() -> Result<DatabaseConnection, DbErr> {
+    let db_path = db_path();
+
+    if !db_path.exists() {
+        let _ = std::fs::File::create(&db_path);
+
+        let db_url = format!("sqlite://{}", db_path.to_string_lossy());
+        let db = Database::connect(&db_url).await?;
+
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_USERS_TABLE.to_string(),
+        )).await?;
+
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_CLIPS_TABLE.to_string(),
+        )).await?;
+
+        return Ok(db);
+    }
+
+    // Connect to the existing database
+    let db_url = format!("sqlite://{}", db_path.to_string_lossy());
+    Database::connect(&db_url).await
 }
 
 const CREATE_USERS_TABLE: &str = r#"
 CREATE TABLE users (
-    id INT PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     access_level TEXT NOT NULL
@@ -32,7 +56,7 @@ CREATE TABLE users (
 "#;
 const CREATE_CLIPS_TABLE: &str = r#"
 CREATE TABLE clips (
-    id INT PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     working_directory TEXT NOT NULL,
     source_filename TEXT NOT NULL,
     clip_filename TEXT NOT NULL,
