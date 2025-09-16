@@ -27,58 +27,14 @@ pub async fn browse(
             .map(|file| file.into_response(&req))
             .unwrap_or_else(|_| HttpResponse::NotFound().finish())
     } else {
-        // List directory contents
-        let mut html = String::new();
+        // Use helper to render directory contents
         let template = include_str!("../views/files/index.html");
-        html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
-        let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
-
-        match fs::read_dir(&target) {
-            Ok(entries) => {
-                for entry in entries.flatten() {
-                    let file_name = entry.file_name().to_string_lossy().to_string();
-                    let link = if subpath.is_empty() {
-                        format!("/{}", file_name)
-                    } else {
-                        format!("/{}/{}", subpath, file_name)
-                    };
-
-                    // Check if the file is a video
-                    let is_video = entry
-                        .path()
-                        .extension()
-                        .and_then(|ext| ext.to_str())
-                        .map(|ext| video_extensions.contains(&ext.to_lowercase().as_str()))
-                        .unwrap_or(false);
-
-                    if is_video {
-                        html += &format!(
-                            "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
-                            link = link,
-                            file_name = file_name
-                        );
-                    } else {
-                        html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
-                    }
-                }
-            }
-            Err(e) => {
-                html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
-            }
-        }
-        html += "</ul></div>";
-        // Add login button
-        if !is_logged_in(&session) {
-            html += r#"<a class='btn btn-primary mt-3' href="/login">Login</a>"#;
-        }
-        // Only show upload and create folder if logged in
-        if is_logged_in(&session) {
-            html += ACTIONS_HTML;
-        }
+        let html = generate_files_list_html(&target, subpath, &session);
         let response_html = template.replace("{{contents}}", &html);
         HttpResponse::Ok().content_type("text/html").body(response_html)
     }
 }
+
 // Handle folder creation
 pub async fn create_folder(
     data: web::Data<AppState>,
@@ -214,7 +170,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
     // Add login button
     if !is_logged_in(session) {
-        html += r#"<a class='btn btn-primary mt-3' href=\"/login\">Login</a>"#;
+        html += r#"<a class='btn btn-primary mt-3' href="/login">Login</a>"#;
     }
 
     // Only show upload and create folder if logged in
@@ -246,14 +202,6 @@ const ACTIONS_HTML: &str = r#"
 <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
 "#;
 
-// pub fn login_routes(cfg: &mut web::ServiceConfig) {
-//     cfg
-//         .route("/login", web::get().to(login_form))
-//         .route("/login", web::post().to(login))
-//         .route("/logout", web::post().to(|session: Session| async move {
-//             logout(session).await
-//         }));
-// }
 pub fn files_routes(cfg: &mut web::ServiceConfig) {
     cfg
         .route("/upload", web::post().to(upload))
@@ -268,6 +216,5 @@ pub fn files_routes(cfg: &mut web::ServiceConfig) {
                     browse(data, req, Some(path), session)
                 },
             ),
-        )
-        ;
+        );
 }
