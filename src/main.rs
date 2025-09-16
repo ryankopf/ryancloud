@@ -62,16 +62,14 @@ async fn main() {
     let db = utils::database::get_database().await.unwrap_or_else(|e| {
         panic!("Failed to connect to database: {}", e);
     });
-
     println!("Serving folder: {:?}", folder);
 
-    // Register separate web::Data instances
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
 
-    let server = HttpServer::new(move || {
+    let http_server = HttpServer::new(move || {
         App::new()
-            .wrap(Logger::default()) // Enable verbose logging
+            .wrap(Logger::default())
             .app_data(db_data.clone())
             .app_data(folder_data.clone())
             .wrap(
@@ -102,7 +100,7 @@ async fn main() {
             )
     });
 
-    let server = match server.bind(("0.0.0.0", 80)) {
+    let server = match http_server.bind(("0.0.0.0", 80)) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
