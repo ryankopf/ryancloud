@@ -5,7 +5,7 @@ use futures_util::stream::StreamExt as _;
 use actix_files::NamedFile;
 use std::fs;
 use actix_web::Error as ActixError;
-use crate::{AppState, HTML_FOOTER, HTML_HEADER, is_logged_in};
+use crate::{AppState, is_logged_in};
 use std::path::PathBuf; // Import PathBuf
 
 // Unified handler: serve file if path is file, list if directory
@@ -29,7 +29,7 @@ pub async fn browse(
     } else {
         // List directory contents
         let mut html = String::new();
-        html += HTML_HEADER;
+        let template = include_str!("../views/files/index.html");
         html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
         let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
 
@@ -94,8 +94,8 @@ pub async fn browse(
             <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
             "#;
         }
-        html += HTML_FOOTER;
-        HttpResponse::Ok().content_type("text/html").body(html)
+        let response_html = template.replace("{{contents}}", &html);
+        HttpResponse::Ok().content_type("text/html").body(response_html)
     }
 }
 // Handle folder creation
@@ -177,13 +177,13 @@ pub async fn upload(
     }
 
     let mut html = String::new();
-    html += HTML_HEADER;
     html += "<div class='card'><div class='card-header'>Upload Results</div><ul class='list-group list-group-flush'>";
     for (file, status) in results {
         html += &format!("<li class='list-group-item'>{}: {}</li>", file, status);
     }
     html += "</ul></div><a class='btn btn-primary mt-3' href='/'>Back</a>";
-    html += HTML_FOOTER;
+    let template = include_str!("../views/files/upload.html");
+    let response_html = template.replace("{{contents}}", &html);
 
-    Ok(HttpResponse::Ok().content_type("text/html").body(html))
+    Ok(HttpResponse::Ok().content_type("text/html").body(response_html))
 }
