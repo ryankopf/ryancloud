@@ -53,8 +53,11 @@ pub async fn index(
     for clip in clips_result {
         html += &format!(r#"
             <li class='list-group-item'>
+            <a href='{source_filename}'>
+            {source_filename}
+            </a> &gt; 
             <a href='/segments/{clip_filename}'>
-            {source_filename} &gt; {clip_filename} ({start}-{end})
+            {clip_filename} ({start}-{end})
             </a>
             </li>
         "#,
