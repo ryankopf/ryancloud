@@ -38,6 +38,11 @@ pub async fn get_database() -> Result<DatabaseConnection, DbErr> {
             CREATE_CLIPS_TABLE.to_string(),
         )).await?;
 
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_SETTINGS_TABLE.to_string(),
+        )).await?;
+
         return Ok(db);
     }
 
@@ -64,5 +69,11 @@ CREATE TABLE clips (
     end BIGINT NOT NULL,
     name TEXT,
     description TEXT
+);
+"#;
+const CREATE_SETTINGS_TABLE: &str = r#"
+CREATE TABLE settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ffmpeg_path TEXT NOT NULL
 );
 "#;
