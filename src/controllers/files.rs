@@ -73,26 +73,7 @@ pub async fn browse(
         }
         // Only show upload and create folder if logged in
         if is_logged_in(&session) {
-            html += r#"
-            <div class="actions py-4">
-                <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
-                <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
-            </div>
-            <div class='collapse my-4' id='uploadForm'>
-                <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
-                    <input type='file' name='files' multiple class='form-control mb-2'>
-                    <button type='submit' class='btn btn-success'>Upload</button>
-                </form>
-            </div>
-            <div class='collapse my-4' id='folderForm'>
-                <form action='/create_folder' method='post' class='mb-2'>
-                    <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
-                    <button type='submit' class='btn btn-secondary'>Create Folder</button>
-                </form>
-            </div>
-            <form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
-            <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
-            "#;
+            html += ACTIONS_HTML;
         }
         let response_html = template.replace("{{contents}}", &html);
         HttpResponse::Ok().content_type("text/html").body(response_html)
@@ -238,31 +219,32 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
     // Only show upload and create folder if logged in
     if is_logged_in(session) {
-        html += r#"
-        <div class="actions py-4">
-            <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
-            <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
-        </div>
-        <div class='collapse my-4' id='uploadForm'>
-            <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
-                <input type='file' name='files' multiple class='form-control mb-2'>
-                <button type='submit' class='btn btn-success'>Upload</button>
-            </form>
-        </div>
-        <div class='collapse my-4' id='folderForm'>
-            <form action='/create_folder' method='post' class='mb-2'>
-                <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
-                <button type='submit' class='btn btn-secondary'>Create Folder</button>
-            </form>
-        </div>
-        <form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
-        <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
-        "#;
+        html += ACTIONS_HTML;
     }
 
     html
 }
 
+const ACTIONS_HTML: &str = r#"
+<div class="actions py-4">
+    <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
+    <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
+</div>
+<div class='collapse my-4' id='uploadForm'>
+    <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
+        <input type='file' name='files' multiple class='form-control mb-2'>
+        <button type='submit' class='btn btn-success'>Upload</button>
+    </form>
+</div>
+<div class='collapse my-4' id='folderForm'>
+    <form action='/create_folder' method='post' class='mb-2'>
+        <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
+        <button type='submit' class='btn btn-secondary'>Create Folder</button>
+    </form>
+</div>
+<form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
+<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
+"#;
 
 // pub fn login_routes(cfg: &mut web::ServiceConfig) {
 //     cfg
