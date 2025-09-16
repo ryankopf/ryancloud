@@ -49,11 +49,29 @@ async fn main() {
     }
 
     let args: Vec<String> = env::args().collect();
-    let folder = if args.len() > 1 {
-        PathBuf::from(&args[1])
-    } else {
-        env::current_dir().unwrap()
-    };
+    let mut folder = env::current_dir().unwrap();
+
+    if args.len() > 1 {
+        for arg in &args[1..] {
+            match arg.as_str() {
+                "where" => {
+                    println!("Database path: {:?}", folder.join("database.sqlite"));
+                }
+                "help" => {
+                    println!("Usage: {} [OPTIONS]\n\nOptions:\n  where       Print the path to the database file.\n  help        Show this help message.\n  folder=PATH Specify the folder to serve.", args[0]);
+                }
+                _ if arg.starts_with("folder=") => {
+                    if let Some(path) = arg.strip_prefix("folder=") {
+                        folder = PathBuf::from(path);
+                    }
+                }
+                _ => {
+                    println!("Unknown argument: {}", arg);
+                }
+            }
+        }
+        return;
+    }
 
     let db = utils::database::get_database().await.unwrap_or_else(|e| {
         panic!("Failed to connect to database: {}", e);
