@@ -1,6 +1,8 @@
 use directories::ProjectDirs;
 use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, DbErr, Statement};
+use sea_orm::EntityTrait;
 use std::path::{PathBuf};
+use crate::models::settings::Entity as SettingsEntity;
 
 const DB_FILE: &str = "database.sqlite";
 
@@ -77,3 +79,12 @@ CREATE TABLE settings (
     ffmpeg_path TEXT NOT NULL
 );
 "#;
+
+pub async fn get_ffmpeg_path(db: &DatabaseConnection) -> Option<String> {
+    SettingsEntity::find()
+        .one(db)
+        .await
+        .ok()
+        .flatten()
+        .map(|settings| settings.ffmpeg_path)
+}

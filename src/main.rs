@@ -12,6 +12,7 @@ use controllers::login::is_logged_in;
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
+use utils::database::get_ffmpeg_path;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -31,25 +32,24 @@ async fn main() {
         Err(e) => eprintln!("Warning: Could not load .env file: {}", e),
     }
 
-    // Check for required environment variables
-    let required_vars = ["FFMPEG_PATH"];
-    for &var in &required_vars {
-        if std::env::var(var).is_err() {
-            eprintln!("Error: Required environment variable '{}' is not set.", var);
-            std::process::exit(1);
-        }
-    }
+    let db = utils::database::get_database().await.unwrap_or_else(|e| {
+        panic!("Failed to connect to database: {}", e);
+    });
 
-    // Check if ffmpeg is accessible
-    if let Ok(ffmpeg_path) = std::env::var("FFMPEG_PATH") {
+    // Check for FFMPEG.
+    let ffmpeg_path = get_ffmpeg_path(&db).await.or_else(|| std::env::var("FFMPEG_PATH").ok());
+    if let Some(ffmpeg_path) = ffmpeg_path {
         if Command::new(&ffmpeg_path).arg("-version").output().is_err() {
             eprintln!("Error: FFMPEG_PATH is set but the executable is not accessible or invalid.");
             std::process::exit(1);
         }
+    } else {
+        eprintln!("Error: FFMPEG_PATH is not set in the database or environment.");
+        std::process::exit(1);
     }
 
     let args: Vec<String> = env::args().collect();
-    let mut folder = env::current_dir().unwrap();
+    let folder = env::current_dir().unwrap();
 
     if args.len() > 1 {
         for arg in &args[1..] {
@@ -63,7 +63,7 @@ async fn main() {
                 }
                 _ if arg.starts_with("folder=") => {
                     if let Some(path) = arg.strip_prefix("folder=") {
-                        folder = PathBuf::from(path);
+                        println!("Folder argument provided: {}", path);
                     }
                 }
                 _ => {
