@@ -15,6 +15,12 @@ pub async fn browse(
     path: Option<web::Path<String>>,
     session: Session,
 ) -> HttpResponse {
+    if !is_logged_in(&session) {
+        let template = include_str!("../views/files/index.html");
+        let response_html = template.replace("{{contents}}", "<a class='btn btn-primary mt-3' href='/login'>Login</a>");
+        return HttpResponse::Ok().content_type("text/html").body(response_html);
+    }
+
     let mut target = folder.get_ref().clone();
     let subpath = path.as_ref().map(|p| p.as_str()).unwrap_or("");
     if !subpath.is_empty() {
@@ -68,7 +74,14 @@ pub async fn create_folder(
 pub async fn upload(
     data: web::Data<AppState>,
     mut payload: Multipart,
+    session: Session,
 ) -> Result<HttpResponse, ActixError> {
+    if !is_logged_in(&session) {
+        let template = include_str!("../views/files/upload.html");
+        let response_html = template.replace("{{contents}}", "<a class='btn btn-primary mt-3' href='/login'>Login</a>");
+        return Ok(HttpResponse::Ok().content_type("text/html").body(response_html));
+    }
+
     let mut results = Vec::new();
     let target_dir = &data.folder;
 
