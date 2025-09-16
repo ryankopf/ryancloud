@@ -38,27 +38,23 @@ pub async fn index(
     }
 
     // Combine results into HTML
-    let clips_html = clips_result
-        .into_iter()
-        .map(|clip| {
-            format!(
-                "<div><b>{}</b><p>{}</p><video src='/segments/{}' controls class='w-100'></video></div>",
-                clip.name.unwrap_or_else(|| "Untitled".to_string()),
-                clip.description.unwrap_or_else(|| "No description available.".to_string()),
-                clip.clip_filename,
-            )
-        })
-        .collect::<String>();
+    let mut html = String::new();
+    html += "<div class='card'><div class='card-header'>Search Results</div><ul class='list-group list-group-flush'>";
 
-    let files_html = file_results
-        .into_iter()
-        .map(|file| format!("<div><p>{}</p></div>", file))
-        .collect::<String>();
+    for clip in clips_result {
+        html += &format!(
+            "<li class='list-group-item'><b>{}</b><p>{}</p><a href='/segments/{}'>View Clip</a></li>",
+            clip.name.unwrap_or_else(|| "Untitled".to_string()),
+            clip.description.unwrap_or_else(|| "No description available.".to_string()),
+            clip.clip_filename,
+        );
+    }
 
-    let html = format!(
-        "<html><body><h6>Search Results</h6>{}{}</body></html>",
-        clips_html, files_html
-    );
+    for file in file_results {
+        html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", file, file);
+    }
+
+    html += "</ul></div>";
 
     HttpResponse::Ok().content_type("text/html").body(html)
 }
