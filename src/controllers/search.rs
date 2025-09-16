@@ -52,10 +52,10 @@ pub async fn index(
 
     for clip in clips_result {
         html += &format!(
-            "<li class='list-group-item'><b>{}</b><p>{}</p><a href='/segments/{}'>View Clip</a></li>",
-            clip.name.unwrap_or_else(|| "Untitled".to_string()),
-            clip.description.unwrap_or_else(|| "No description available.".to_string()),
-            clip.clip_filename,
+            "<li class='list-group-item'><a href='/segments/{clip_filename}'>{clip_name}</a><p>{clip_description}</p></li>",
+            clip_filename = clip.clip_filename,
+            clip_name = clip.name.unwrap_or_else(|| "Untitled".to_string()),
+            clip_description = clip.description.unwrap_or_else(|| "No description available.".to_string()),
         );
     }
 
