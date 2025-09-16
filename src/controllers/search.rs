@@ -1,17 +1,22 @@
+use actix_session::Session; // Import Session
 use actix_web::{get, web, HttpResponse};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use crate::models::clip;
+use crate::controllers::files::generate_files_list_html; // Import the helper function
 use std::fs;
 
 #[get("/search")]
 pub async fn index(
     query: web::Query<std::collections::HashMap<String, String>>,
     db: web::Data<DatabaseConnection>,
+    session: Session, // Accept session as a parameter
 ) -> HttpResponse {
     let search_term = query.get("q").unwrap_or(&"".to_string()).to_lowercase();
 
     if search_term.is_empty() {
-        return HttpResponse::Ok().content_type("text/html").body("<p>No search term provided.</p>");
+        let folder = std::env::current_dir().unwrap(); // Use the current directory as the folder
+        let html = generate_files_list_html(&folder, "", &session);
+        return HttpResponse::Ok().content_type("text/html").body(html);
     }
 
     // Search clips database

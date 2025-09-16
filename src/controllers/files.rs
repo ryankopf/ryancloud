@@ -188,6 +188,81 @@ pub async fn upload(
     Ok(HttpResponse::Ok().content_type("text/html").body(response_html))
 }
 
+// Helper function to generate files list HTML
+pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Session) -> String {
+    let mut html = String::new();
+    let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
+
+    html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
+
+    match fs::read_dir(target) {
+        Ok(entries) => {
+            for entry in entries.flatten() {
+                let file_name = entry.file_name().to_string_lossy().to_string();
+                let link = if subpath.is_empty() {
+                    format!("/{}", file_name)
+                } else {
+                    format!("/{}/{}", subpath, file_name)
+                };
+
+                // Check if the file is a video
+                let is_video = entry
+                    .path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| video_extensions.contains(&ext.to_lowercase().as_str()))
+                    .unwrap_or(false);
+
+                if is_video {
+                    html += &format!(
+                        "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
+                        link = link,
+                        file_name = file_name
+                    );
+                } else {
+                    html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
+                }
+            }
+        }
+        Err(e) => {
+            html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
+        }
+    }
+
+    html += "</ul></div>";
+
+    // Add login button
+    if !is_logged_in(session) {
+        html += r#"<a class='btn btn-primary mt-3' href=\"/login\">Login</a>"#;
+    }
+
+    // Only show upload and create folder if logged in
+    if is_logged_in(session) {
+        html += r#"
+        <div class="actions py-4">
+            <button class='btn btn-success mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#uploadForm' aria-expanded='false' aria-controls='uploadForm'>Upload Files</button>
+            <button class='btn btn-secondary mt-2' type='button' data-bs-toggle='collapse' data-bs-target='#folderForm' aria-expanded='false' aria-controls='folderForm'>New Folder</button>
+        </div>
+        <div class='collapse my-4' id='uploadForm'>
+            <form action='/upload' method='post' enctype='multipart/form-data' class='mb-2'>
+                <input type='file' name='files' multiple class='form-control mb-2'>
+                <button type='submit' class='btn btn-success'>Upload</button>
+            </form>
+        </div>
+        <div class='collapse my-4' id='folderForm'>
+            <form action='/create_folder' method='post' class='mb-2'>
+                <input type='text' name='folder_name' placeholder='New folder name' required class='form-control mb-2'>
+                <button type='submit' class='btn btn-secondary'>Create Folder</button>
+            </form>
+        </div>
+        <form action='/logout' method='post' class='mt-4'><button type='submit' class='btn btn-outline-danger'>Logout</button></form>
+        <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
+        "#;
+    }
+
+    html
+}
+
 
 // pub fn login_routes(cfg: &mut web::ServiceConfig) {
 //     cfg
