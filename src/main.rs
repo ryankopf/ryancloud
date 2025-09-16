@@ -77,11 +77,11 @@ async fn main() {
                 .build()
             )
             .configure(controllers::clips::clips_routes)
-            .configure(controllers::files::files_routes)
             .configure(controllers::login::login_routes)
             .configure(controllers::search::search_routes)
             .configure(controllers::signup::signup_routes)
             .configure(controllers::videos::video_routes)
+            .configure(controllers::files::files_routes) // Must be last.
     });
 
     let server = match http_server.bind(("0.0.0.0", 80)) {
