@@ -12,7 +12,7 @@ use controllers::login::is_logged_in;
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
-use utils::database::get_ffmpeg_path;
+use utils::database::{get_ffmpeg_path, set_ffmpeg_path};
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -23,6 +23,40 @@ struct LoginForm {
 struct AppState {
     folder: PathBuf,
     db: DatabaseConnection,
+}
+
+async fn handle_args(args: &[String], db: &DatabaseConnection) {
+    if args.len() > 1 {
+        for arg in &args[1..] {
+            match arg.as_str() {
+                "--where" => {
+                    let db_path = utils::database::db_path();
+                    println!("Database path: {:?}", db_path);
+                }
+                "--help" => {
+                    println!("Usage: {} [OPTIONS]\n\nOptions:\n  --where       Print the path to the database file.\n  --help        Show this help message.\n  --folder=PATH Specify the folder to serve.\n  --set-ffmpeg=PATH Set the FFMPEG_PATH in the database.", args[0]);
+                }
+                _ if arg.starts_with("--folder=") => {
+                    if let Some(path) = arg.strip_prefix("--folder=") {
+                        println!("Folder argument provided: {}", path);
+                    }
+                }
+                _ if arg.starts_with("--set-ffmpeg=") => {
+                    if let Some(path) = arg.strip_prefix("--set-ffmpeg=") {
+                        if let Err(e) = set_ffmpeg_path(db, path).await {
+                            eprintln!("Failed to set FFMPEG_PATH: {}", e);
+                        } else {
+                            println!("FFMPEG_PATH set to: {}", path);
+                        }
+                    }
+                }
+                _ => {
+                    println!("Unknown argument: {}", arg);
+                }
+            }
+        }
+        std::process::exit(0);
+    }
 }
 
 #[actix_web::main]
@@ -36,6 +70,9 @@ async fn main() {
         panic!("Failed to connect to database: {}", e);
     });
 
+    let args: Vec<String> = env::args().collect();
+    handle_args(&args, &db).await;
+
     // Check for FFMPEG.
     let ffmpeg_path = get_ffmpeg_path(&db).await.or_else(|| std::env::var("FFMPEG_PATH").ok());
     if let Some(ffmpeg_path) = ffmpeg_path {
@@ -44,39 +81,11 @@ async fn main() {
             std::process::exit(1);
         }
     } else {
-        eprintln!("Error: FFMPEG_PATH is not set in the database or environment.");
+        eprintln!("Error: FFMPEG_PATH is not set in the database or environment. Please set it using --set-ffmpeg=PATH or set the FFMPEG_PATH environment variable.");
         std::process::exit(1);
     }
 
-    let args: Vec<String> = env::args().collect();
     let folder = env::current_dir().unwrap();
-
-    if args.len() > 1 {
-        for arg in &args[1..] {
-            match arg.as_str() {
-                "where" => {
-                    let db_path = utils::database::db_path();
-                    println!("Database path: {:?}", db_path);
-                }
-                "help" => {
-                    println!("Usage: {} [OPTIONS]\n\nOptions:\n  where       Print the path to the database file.\n  help        Show this help message.\n  folder=PATH Specify the folder to serve.", args[0]);
-                }
-                _ if arg.starts_with("folder=") => {
-                    if let Some(path) = arg.strip_prefix("folder=") {
-                        println!("Folder argument provided: {}", path);
-                    }
-                }
-                _ => {
-                    println!("Unknown argument: {}", arg);
-                }
-            }
-        }
-        return;
-    }
-
-    let db = utils::database::get_database().await.unwrap_or_else(|e| {
-        panic!("Failed to connect to database: {}", e);
-    });
     println!("Serving folder: {:?}", folder);
 
     let db_data = web::Data::new(db);

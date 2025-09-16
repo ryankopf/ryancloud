@@ -1,5 +1,5 @@
 use directories::ProjectDirs;
-use sea_orm::{ConnectionTrait, Database, DatabaseConnection, DbBackend, DbErr, Statement};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, Database, DatabaseConnection, DbBackend, DbErr, IntoActiveModel, Statement};
 use sea_orm::EntityTrait;
 use std::path::{PathBuf};
 use crate::models::settings::Entity as SettingsEntity;
@@ -87,4 +87,18 @@ pub async fn get_ffmpeg_path(db: &DatabaseConnection) -> Option<String> {
         .ok()
         .flatten()
         .map(|settings| settings.ffmpeg_path)
+}
+
+pub async fn set_ffmpeg_path(db: &DatabaseConnection, path: &str) -> Result<(), DbErr> {
+    let mut settings: crate::models::settings::ActiveModel = SettingsEntity::find()
+        .one(db)
+        .await?
+        .map(|m| m.into_active_model())
+        .unwrap_or_else(|| crate::models::settings::ActiveModel {
+            id: Default::default(),
+            ffmpeg_path: Default::default(),
+        });
+
+    settings.ffmpeg_path = sea_orm::ActiveValue::Set(path.to_string());
+    settings.update(db).await.map(|_| ())
 }
