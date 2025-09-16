@@ -37,3 +37,11 @@ pub async fn signup(
         Err(e) => Ok(HttpResponse::InternalServerError().body(format!("Error: {}", e))),
     }
 }
+
+pub fn signup_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/signup")
+            .route(web::get().to(signup_form))
+            .route(web::post().to(signup))
+    );
+}

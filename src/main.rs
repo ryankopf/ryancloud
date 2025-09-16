@@ -1,16 +1,14 @@
 mod controllers;
 mod models;
 mod utils;
-use actix_web::{web, App, HttpServer, HttpRequest};
-use actix_session::{Session, SessionMiddleware};
+use actix_web::{web, App, HttpServer};
+use actix_session::SessionMiddleware;
 use actix_web::cookie::Key;
 use serde::Deserialize;
 use std::env;
 use sea_orm::DatabaseConnection;
 use std::path::PathBuf;
-use controllers::files::{browse, upload, create_folder};
 use controllers::login::is_logged_in;
-use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
@@ -81,21 +79,8 @@ async fn main() {
             .configure(controllers::videos::video_routes)
             .configure(controllers::clips::clips_routes)
             .configure(controllers::login::login_routes)
-            .route("/signup", web::get().to(signup_form))
-            .route("/signup", web::post().to(signup))
-            .route("/upload", web::post().to(upload))
-            .route("/create_folder", web::post().to(create_folder))
-            .route("/", web::get().to(|data: web::Data<PathBuf>, req: HttpRequest, session: Session| {
-                browse(data, req, None, session)
-            }))
-            .route(
-                "/{path:.*}",
-                web::get().to(
-                    |data: web::Data<PathBuf>, req: HttpRequest, path: web::Path<String>, session: Session| {
-                        browse(data, req, Some(path), session)
-                    },
-                ),
-            )
+            .configure(controllers::files::files_routes)
+            .configure(controllers::signup::signup_routes)
     });
 
     let server = match http_server.bind(("0.0.0.0", 80)) {

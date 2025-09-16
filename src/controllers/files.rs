@@ -187,3 +187,30 @@ pub async fn upload(
 
     Ok(HttpResponse::Ok().content_type("text/html").body(response_html))
 }
+
+
+// pub fn login_routes(cfg: &mut web::ServiceConfig) {
+//     cfg
+//         .route("/login", web::get().to(login_form))
+//         .route("/login", web::post().to(login))
+//         .route("/logout", web::post().to(|session: Session| async move {
+//             logout(session).await
+//         }));
+// }
+pub fn files_routes(cfg: &mut web::ServiceConfig) {
+    cfg
+        .route("/upload", web::post().to(upload))
+        .route("/create_folder", web::post().to(create_folder))
+        .route("/", web::get().to(|data: web::Data<PathBuf>, req: HttpRequest, session: Session| {
+            browse(data, req, None, session)
+        }))
+        .route(
+            "/{path:.*}",
+            web::get().to(
+                |data: web::Data<PathBuf>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                    browse(data, req, Some(path), session)
+                },
+            ),
+        )
+        ;
+}
