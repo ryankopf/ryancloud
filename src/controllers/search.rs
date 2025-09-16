@@ -51,11 +51,17 @@ pub async fn index(
     html += "<div class='card'><div class='card-header'>Search Results</div><ul class='list-group list-group-flush'>";
 
     for clip in clips_result {
-        html += &format!(
-            "<li class='list-group-item'><a href='/segments/{clip_filename}'>{clip_name}</a><p>{clip_description}</p></li>",
+        html += &format!(r#"
+            <li class='list-group-item'>
+            <a href='/segments/{clip_filename}'>
+            {source_filename} &gt; {clip_filename} ({start}-{end})
+            </a>
+            </li>
+        "#,
+            source_filename = clip.source_filename.clone(),
             clip_filename = clip.clip_filename,
-            clip_name = clip.name.unwrap_or_else(|| "Untitled".to_string()),
-            clip_description = clip.description.unwrap_or_else(|| "No description available.".to_string()),
+            start = clip.start,
+            end = clip.end,
         );
     }
 
