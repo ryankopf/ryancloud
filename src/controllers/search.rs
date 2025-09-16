@@ -10,6 +10,10 @@ pub async fn index(
 ) -> HttpResponse {
     let search_term = query.get("q").unwrap_or(&"".to_string()).to_lowercase();
 
+    if search_term.is_empty() {
+        return HttpResponse::Ok().content_type("text/html").body("<p>No search term provided.</p>");
+    }
+
     // Search clips database
     let clips = clip::Entity::find()
         .filter(
