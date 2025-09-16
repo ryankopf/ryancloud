@@ -55,7 +55,8 @@ async fn main() {
         for arg in &args[1..] {
             match arg.as_str() {
                 "where" => {
-                    println!("Database path: {:?}", folder.join("database.sqlite"));
+                    let db_path = utils::database::db_path();
+                    println!("Database path: {:?}", db_path);
                 }
                 "help" => {
                     println!("Usage: {} [OPTIONS]\n\nOptions:\n  where       Print the path to the database file.\n  help        Show this help message.\n  folder=PATH Specify the folder to serve.", args[0]);
