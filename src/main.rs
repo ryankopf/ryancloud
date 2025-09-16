@@ -16,6 +16,7 @@ use controllers::signup::{signup, signup_form};
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
+use crate::utils::database::db_path;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -60,9 +61,9 @@ async fn main() {
     };
 
     // Set up database connection (update with your DB URL as needed)
-    let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite://ryancloud.db".to_string());
-    let db = Database::connect(&db_url).await.unwrap_or_else(|e| {
-        panic!("Failed to connect to DB at '{}': {}", db_url, e);
+    let db_url = db_path();
+    let db = Database::connect(&format!("sqlite://{}", db_url.display())).await.unwrap_or_else(|e| {
+        panic!("Failed to connect to DB at '{}': {}", db_url.display(), e);
     });
 
     println!("Serving folder: {:?}", folder);
