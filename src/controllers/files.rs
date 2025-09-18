@@ -28,6 +28,12 @@ pub async fn browse(
     }
 
     if target.is_file() {
+        // Check if the path ends with "/thumbs/"
+        if subpath.ends_with("/thumbs/") {
+            crate::models::thumb::Thumb::generate();
+            return HttpResponse::Ok().body("Thumbnail generation logic to be implemented");
+        }
+
         // Serve file for download
         NamedFile::open(target)
             .map(|file| file.into_response(&req))
