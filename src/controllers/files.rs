@@ -30,8 +30,10 @@ pub async fn browse(
     if target.is_file() {
         // Check if the path ends with "/thumbs/"
         if subpath.ends_with("/thumbs/") {
-            crate::models::thumb::Thumb::generate();
-            return HttpResponse::Ok().body("Thumbnail generation logic to be implemented");
+            let input = target.with_extension("").to_string_lossy().to_string();
+            let output = format!("{}.webp", target.to_string_lossy());
+            crate::models::thumb::Thumb::generate(&input, &output);
+            return HttpResponse::Ok().body("Thumbnail generation command executed");
         }
 
         // Serve file for download
