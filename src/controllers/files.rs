@@ -195,7 +195,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         html += "<div class='card mt-4'><div class='card-header'>Video Thumbnails</div><div class='card-body'><div class='row'>";
         for video in video_files {
             html += &format!(
-                "<a href='/videos{link}'><img src='/{subpath}/thumbs/{video}' class='img-fluid rounded border' alt='{video}' style='max-width:250px;width:100%;height:150px;display:inline-block;'></a>",
+                "<a href='/videos{link}'><img src='/{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='max-width:250px;width:100%;height:150px;display:inline-block;'></a>",
                 link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
                 subpath = subpath,
                 video = video
