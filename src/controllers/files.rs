@@ -145,6 +145,8 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
     html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
 
+    let mut video_files = Vec::new();
+
     match fs::read_dir(target) {
         Ok(entries) => {
             for entry in entries.flatten() {
@@ -164,6 +166,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                     .unwrap_or(false);
 
                 if is_video {
+                    video_files.push(file_name.clone());
                     html += &format!(
                         "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
                         link = link,
@@ -180,6 +183,20 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
     }
 
     html += "</ul></div>";
+
+    // Append video thumbnails grid
+    if !video_files.is_empty() {
+        html += "<div class='card mt-4'><div class='card-header'>Video Thumbnails</div><div class='card-body'><div class='row'>";
+        for video in video_files {
+            html += &format!(
+                "<a href='/videos{link}'><img src='/{subpath}/thumbs/{video}' class='img-fluid rounded border' alt='{video}' style='max-width:250px;width:100%;height:150px;display:inline-block;'></a>",
+                link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
+                subpath = subpath,
+                video = video
+            );
+        }
+        html += "</div></div></div>";
+    }
 
     // Add login button
     if !is_logged_in(session) {
