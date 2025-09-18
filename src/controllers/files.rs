@@ -27,15 +27,19 @@ pub async fn browse(
         target = target.join(subpath);
     }
 
-    if target.is_file() {
-        // Check if the path ends with "/thumbs/"
-        if subpath.ends_with("/thumbs/") {
-            let input = target.with_extension("").to_string_lossy().to_string();
-            let output = format!("{}.webp", target.to_string_lossy());
+    if subpath.contains("/thumbs/") && !target.exists() {
+        // Remove '/thumbs/' from the path
+        let original_path = target.parent().unwrap().parent().unwrap().join(target.file_name().unwrap());
+
+        if original_path.exists() {
+            let input = original_path.to_string_lossy().to_string();
+            let output = target.to_string_lossy().to_string();
             crate::models::thumb::Thumb::generate(&input, &output);
             return HttpResponse::Ok().body("Thumbnail generation command executed");
+        } else {
+            return HttpResponse::NotFound().body("Original file not found for thumbnail generation");
         }
-
+    } else if target.is_file() {
         // Serve file for download
         NamedFile::open(target)
             .map(|file| file.into_response(&req))
