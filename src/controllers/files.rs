@@ -196,13 +196,14 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
                 if is_video {
                     video_files.push(file_name.clone());
-                    html += &format!(
-                        "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
-                        link = link,
-                        file_name = file_name
-                    );
+                    html += &crate::models::file::File::file_preview(&link, &file_name, true);
+                    // html += &format!(
+                    //     "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
+                    //     link = link,
+                    //     file_name = file_name
+                    // );
                 } else {
-                    html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", link, file_name);
+                    html += &crate::models::file::File::file_preview(&link, &file_name, false);
                 }
             }
         }
@@ -217,13 +218,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
     if !video_files.is_empty() {
         html += "<div class='card mt-4'><div class='card-header'>Videos</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
         for video in video_files {
-            html += &format!(
-                "<a href='/videos{link}' style='max-width:250px;display:inline-block;'><img src='{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='width:100%;'><div class='text-center text-white position-absolute mx-auto px-2' style='margin-top:-30px;'>{filename}</div></a>",
-                link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
-                subpath = subpath,
-                video = video,
-                filename = video
-            );
+            html += &crate::models::file::File::video_preview(subpath, &video);
         }
         html += "</div></div></div>";
     }
