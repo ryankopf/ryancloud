@@ -215,13 +215,14 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
     // Append video thumbnails grid
     if !video_files.is_empty() {
-        html += "<div class='card mt-4'><div class='card-header'>Video Thumbnails</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
+        html += "<div class='card mt-4'><div class='card-header'>Videos</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
         for video in video_files {
             html += &format!(
-                "<a href='/videos{link}' style='max-width:250px;display:inline-block;'><img src='{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='width:100%;'></a>",
+                "<a href='/videos{link}' style='max-width:250px;display:inline-block;'><img src='{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='width:100%;'><div class='text-center text-white position-absolute mx-auto px-2' style='margin-top:-30px;'>{filename}</div></a>",
                 link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
                 subpath = subpath,
-                video = video
+                video = video,
+                filename = video
             );
         }
         html += "</div></div></div>";
