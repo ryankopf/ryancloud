@@ -30,7 +30,7 @@ pub async fn index(
         .all(db.get_ref())
         .await;
 
-    let clips_result = match clips {
+    let clips = match clips {
         Ok(clips) => clips,
         Err(_) => vec![],
     };
@@ -51,8 +51,8 @@ pub async fn index(
     let mut html = String::new();
     html += "<div class='card'><div class='card-header'>Search Results</div><ul class='list-group list-group-flush'>";
 
-    for clip in clips_result {
-        html += &File::clip_preview(&clip);
+    for clip in clips.iter() {
+        html += &File::clip_preview(clip);
     }
     
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
@@ -72,6 +72,14 @@ pub async fn index(
         html += "<div class='card mt-4'><div class='card-header'>Videos</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
         for video in videos {
             html += &File::video_preview("", &video);
+        }
+        html += "</div></div></div>";
+    }
+
+    if !clips.is_empty() {
+        html += "<div class='card mt-4'><div class='card-header'>Clips</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
+        for clip in clips {
+            html += &File::clip_video_preview(&clip);
         }
         html += "</div></div></div>";
     }

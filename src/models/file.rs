@@ -41,4 +41,15 @@ impl File {
             end = clip.end,
         )
     }
+
+    pub fn clip_video_preview(clip: &crate::models::clip::Model) -> String {
+        format!(
+            "<a href='/segments/{clip_filename}' style='max-width:250px;display:inline-block;'>\
+            <img src='/segments/thumbs/{clip_filename}.webp' class='img-fluid rounded border' alt='{clip_filename}' style='width:100%;'>\
+            <div class='text-center text-white position-absolute mx-auto px-2' style='margin-top:-30px;'>{clip_filename} ({start}-{end})</div></a>",
+            clip_filename = clip.clip_filename,
+            start = clip.start,
+            end = clip.end,
+        )
+    }
 }
