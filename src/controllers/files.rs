@@ -30,6 +30,11 @@ pub async fn browse(
         target = target.join(subpath);
     }
     if subpath.contains("thumbs/") && !target.exists() {
+        if let Some(parent) = target.parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent).expect("Failed to create thumbs directory");
+            }
+        }
         // Remove '/thumbs/' from the path
         println!("Generating thumbnail for: {}", target.display());
         let original_file_name = target.file_name().and_then(|n| n.to_str()).unwrap_or("")
