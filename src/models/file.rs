@@ -14,14 +14,31 @@ impl File {
     }
 
     pub fn file_preview(link: &str, file_name: &str, is_video: bool) -> String {
-      let video_link = if is_video {
-          format!(" <a href='/videos{}'>🎬</a>", link)
-      } else {
-          "".to_string()
-      };
-      format!(
-          "<li class='list-group-item'><a href='{}'>{}</a>{}</li>",
-          link, file_name, video_link
-      )
+        let video_link = if is_video {
+            format!(" <a href='/videos{}'>🎬</a>", link)
+        } else {
+            "".to_string()
+        };
+        format!(
+            "<li class='list-group-item'><a href='{}'>{}</a>{}</li>",
+            link, file_name, video_link
+        )
+    }
+
+    pub fn clip_preview(clip: &crate::models::clip::Model) -> String {
+        format!(
+            "<li class='list-group-item'>
+            <a href='{source_filename}'>
+            {source_filename}
+            </a> &gt;
+            <a href='/segments/{clip_filename}'>
+            {clip_filename} ({start}-{end})
+            </a>
+            </li>",
+            source_filename = clip.source_filename.clone(),
+            clip_filename = clip.clip_filename,
+            start = clip.start,
+            end = clip.end,
+        )
     }
 }

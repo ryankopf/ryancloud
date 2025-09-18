@@ -52,21 +52,7 @@ pub async fn index(
     html += "<div class='card'><div class='card-header'>Search Results</div><ul class='list-group list-group-flush'>";
 
     for clip in clips_result {
-        html += &format!(r#"
-            <li class='list-group-item'>
-            <a href='{source_filename}'>
-            {source_filename}
-            </a> &gt; 
-            <a href='/segments/{clip_filename}'>
-            {clip_filename} ({start}-{end})
-            </a>
-            </li>
-        "#,
-            source_filename = clip.source_filename.clone(),
-            clip_filename = clip.clip_filename,
-            start = clip.start,
-            end = clip.end,
-        );
+        html += &File::clip_preview(&clip);
     }
     
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
