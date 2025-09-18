@@ -5,9 +5,9 @@ pub struct Thumb {
 }
 
 impl Thumb {
-    pub fn generate(input: &str, output: &str) {
-        // Construct the ffmpeg command
-        let command = Command::new("ffmpeg")
+    pub fn generate(input: &str, output: &str, ffmpeg_path: &str) {
+        // Construct the ffmpeg command using the provided path
+        let command = Command::new(ffmpeg_path)
             .args(["-i", input, "-vf", "thumbnail,scale=320:240", "-frames:v", "1", output])
             .spawn();
 

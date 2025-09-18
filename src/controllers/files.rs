@@ -6,10 +6,13 @@ use actix_files::NamedFile;
 use std::fs;
 use actix_web::Error as ActixError;
 use crate::{AppState, is_logged_in};
-use std::path::PathBuf; // Import PathBuf
+use std::path::PathBuf;
+use sea_orm::DatabaseConnection;
+use sea_orm::EntityTrait;
 
 // Unified handler: serve file if path is file, list if directory
 pub async fn browse(
+    db: web::Data<DatabaseConnection>,
     folder: web::Data<PathBuf>,
     req: HttpRequest,
     path: Option<web::Path<String>>,
@@ -36,8 +39,20 @@ pub async fn browse(
         if original_path.exists() {
             let input = original_path.to_string_lossy().to_string();
             let output = target.to_string_lossy().to_string();
-            crate::models::thumb::Thumb::generate(&input, &output);
-            return HttpResponse::Ok().body("Thumbnail generation command executed");
+
+            let ffmpeg_path = crate::models::settings::Entity::find()
+                .one(db.get_ref())
+                .await
+                .ok()
+                .flatten()
+                .map(|settings| settings.ffmpeg_path);
+
+            if let Some(ffmpeg_path) = ffmpeg_path {
+                crate::models::thumb::Thumb::generate(&input, &output, &ffmpeg_path);
+                return HttpResponse::Ok().body("Thumbnail generation command executed");
+            } else {
+                return HttpResponse::InternalServerError().body("FFMPEG_PATH is not set in the database");
+            }
         } else {
             return HttpResponse::NotFound().body("Original file not found for thumbnail generation");
         }
@@ -250,15 +265,13 @@ pub fn files_routes(cfg: &mut web::ServiceConfig) {
     cfg
         .route("/upload", web::post().to(upload))
         .route("/create_folder", web::post().to(create_folder))
-        .route("/", web::get().to(|data: web::Data<PathBuf>, req: HttpRequest, session: Session| {
-            browse(data, req, None, session)
+        .route("/", web::get().to(|db: web::Data<DatabaseConnection>, folder: web::Data<PathBuf>, req: HttpRequest, session: Session| {
+            browse(db, folder, req, None, session)
         }))
         .route(
             "/{path:.*}",
-            web::get().to(
-                |data: web::Data<PathBuf>, req: HttpRequest, path: web::Path<String>, session: Session| {
-                    browse(data, req, Some(path), session)
-                },
-            ),
+            web::get().to(|db: web::Data<DatabaseConnection>, folder: web::Data<PathBuf>, req: HttpRequest, path: web::Path<String>, session: Session| {
+                browse(db, folder, req, Some(path), session)
+            }),
         );
 }
