@@ -39,6 +39,7 @@ pub async fn browse(
         if original_path.exists() {
             let input = original_path.to_string_lossy().to_string();
             let output = target.to_string_lossy().to_string();
+            println!("Input: {}, Output: {}", input, output);
 
             let ffmpeg_path = crate::models::settings::Entity::find()
                 .one(db.get_ref())
