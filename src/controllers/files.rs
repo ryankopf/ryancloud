@@ -26,11 +26,11 @@ pub async fn browse(
     if !subpath.is_empty() {
         target = target.join(subpath);
     }
-
-    if subpath.contains("/thumbs/") && !target.exists() {
+    if subpath.contains("thumbs/") && !target.exists() {
         // Remove '/thumbs/' from the path
+        println!("Generating thumbnail for: {}", target.display());
         let original_path = target.parent().unwrap().parent().unwrap().join(target.file_name().unwrap());
-
+        println!("Original file path: {}", original_path.display());
         if original_path.exists() {
             let input = original_path.to_string_lossy().to_string();
             let output = target.to_string_lossy().to_string();
@@ -201,7 +201,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         html += "<div class='card mt-4'><div class='card-header'>Video Thumbnails</div><div class='card-body'><div class='row'>";
         for video in video_files {
             html += &format!(
-                "<a href='/videos{link}'><img src='/{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='max-width:250px;width:100%;height:150px;display:inline-block;'></a>",
+                "<a href='/videos{link}'><img src='{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='max-width:250px;width:100%;height:150px;display:inline-block;'></a>",
                 link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
                 subpath = subpath,
                 video = video
