@@ -2,13 +2,14 @@
 
 Use this for sharing files with video editors and other staff.
 
-## TO DO
-
-* Implement tagging and timecodes for media asset files.
+* Make clips from your videos.
+* Tag clips and videos with keywords, names, descriptions.
 
 For example, a video file could have tags like:
 takoyaki, walking, osaka, japan, eating, food closeup, ryan kopf
 
-And maybe even automatic transcriptions.
+## TO DO
 
-* Implement clipmaking feature. Have a clip model defining a source, start/end, name, description
+* Automatic thumbnail generation.
+* Automatic video transcriptions.
+* Implement SSL version.
