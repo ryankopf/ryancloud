@@ -29,7 +29,9 @@ pub async fn browse(
     if subpath.contains("thumbs/") && !target.exists() {
         // Remove '/thumbs/' from the path
         println!("Generating thumbnail for: {}", target.display());
-        let original_path = target.parent().unwrap().parent().unwrap().join(target.file_name().unwrap());
+        let original_file_name = target.file_name().and_then(|n| n.to_str()).unwrap_or("")
+            .replace(".webp", "");
+        let original_path = target.parent().unwrap().parent().unwrap().join(original_file_name);
         println!("Original file path: {}", original_path.display());
         if original_path.exists() {
             let input = original_path.to_string_lossy().to_string();
