@@ -9,14 +9,16 @@ actix-web = "4"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 actix-files = "0.6"
 actix-multipart = "0.7.2"
-futures-util = "0.3.31"
-sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] }
-sea-orm-macros = "0.12"
 actix-session = { version = "0.7", features = ["cookie-session"] }
 bcrypt = "0.17.1"
+futures-util = "0.3.31"
+#rustls = "0.23"
+#rustls-pemfile = "2"
+sea-orm = { version = "0.12", features = ["sqlx-sqlite", "runtime-tokio-native-tls"] }
+sea-orm-macros = "0.12"
 #mvc_views = "0.1.4"
 serde = "1.0.219"
 serde_json = "1.0"
+directories = "6.0.0"
 dotenvy = "0.15.7"
 regex = "1.11.2"
-directories = "6.0.0"
