@@ -8,7 +8,6 @@ use actix_web::Error as ActixError;
 use crate::{AppState, is_logged_in};
 use std::path::PathBuf;
 use sea_orm::DatabaseConnection;
-use sea_orm::EntityTrait;
 
 // Unified handler: serve file if path is file, list if directory
 pub async fn browse(
@@ -36,22 +35,17 @@ pub async fn browse(
             }
         }
         // Remove '/thumbs/' from the path
-        println!("Generating thumbnail for: {}", target.display());
+        // println!("Generating thumbnail for: {}", target.display());
         let original_file_name = target.file_name().and_then(|n| n.to_str()).unwrap_or("")
             .replace(".webp", "");
         let original_path = target.parent().unwrap().parent().unwrap().join(original_file_name);
-        println!("Original file path: {}", original_path.display());
+        // println!("Original file path: {}", original_path.display());
         if original_path.exists() {
             let input = original_path.to_string_lossy().to_string();
             let output = target.to_string_lossy().to_string();
             println!("Input: {}, Output: {}", input, output);
 
-            let ffmpeg_path = crate::models::settings::Entity::find()
-                .one(db.get_ref())
-                .await
-                .ok()
-                .flatten()
-                .map(|settings| settings.ffmpeg_path);
+            let ffmpeg_path = crate::utils::database::get_ffmpeg_path(db.get_ref()).await.or_else(|| std::env::var("FFMPEG_PATH").ok());
 
             if let Some(ffmpeg_path) = ffmpeg_path {
                 crate::models::thumb::Thumb::generate(&input, &output, &ffmpeg_path);

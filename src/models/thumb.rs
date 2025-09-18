@@ -1,14 +1,16 @@
 use std::process::Command;
 
 pub struct Thumb {
-
 }
 
 impl Thumb {
     pub fn generate(input: &str, output: &str, ffmpeg_path: &str) {
         // Construct the ffmpeg command using the provided path
+        let command_args = ["-i", input, "-vf", "thumbnail,scale=320:240", "-frames:v", "1", output];
+        println!("Executing command: {} {:?}", ffmpeg_path, command_args);
+
         let command = Command::new(ffmpeg_path)
-            .args(["-i", input, "-vf", "thumbnail,scale=320:240", "-frames:v", "1", output])
+            .args(&command_args)
             .spawn();
 
         // Log the command execution status
