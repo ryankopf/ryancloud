@@ -12,7 +12,8 @@ use controllers::login::is_logged_in;
 use actix_web::middleware::Logger;
 use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
-use utils::database::{get_ffmpeg_path, set_ffmpeg_path};
+use utils::args::handle_args;
+use utils::database::get_ffmpeg_path;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -23,40 +24,6 @@ struct LoginForm {
 struct AppState {
     folder: PathBuf,
     db: DatabaseConnection,
-}
-
-async fn handle_args(args: &[String], db: &DatabaseConnection) {
-    if args.len() > 1 {
-        for arg in &args[1..] {
-            match arg.as_str() {
-                "--where" => {
-                    let db_path = utils::database::db_path();
-                    println!("Database path: {:?}", db_path);
-                }
-                "--help" => {
-                    println!("Usage: {} [OPTIONS]\n\nOptions:\n  --where       Print the path to the database file.\n  --help        Show this help message.\n  --folder=PATH Specify the folder to serve.\n  --set-ffmpeg=PATH Set the FFMPEG_PATH in the database.", args[0]);
-                }
-                _ if arg.starts_with("--folder=") => {
-                    if let Some(path) = arg.strip_prefix("--folder=") {
-                        println!("Folder argument provided: {}", path);
-                    }
-                }
-                _ if arg.starts_with("--set-ffmpeg=") => {
-                    if let Some(path) = arg.strip_prefix("--set-ffmpeg=") {
-                        if let Err(e) = set_ffmpeg_path(db, path).await {
-                            eprintln!("Failed to set FFMPEG_PATH: {}", e);
-                        } else {
-                            println!("FFMPEG_PATH set to: {}", path);
-                        }
-                    }
-                }
-                _ => {
-                    println!("Unknown argument: {}", arg);
-                }
-            }
-        }
-        std::process::exit(0);
-    }
 }
 
 #[actix_web::main]
