@@ -2,6 +2,7 @@ use actix_session::Session; // Import Session
 use actix_web::{get, web, HttpResponse};
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use crate::models::clip;
+use crate::models::file::File;
 use crate::controllers::files::generate_files_list_html; // Import the helper function
 use std::fs;
 
@@ -67,12 +68,27 @@ pub async fn index(
             end = clip.end,
         );
     }
+    
+    let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
+    let mut videos = Vec::new(); // Placeholder for video files if needed
 
     for file in file_results {
-        html += &format!("<li class='list-group-item'><a href='{}'>{}</a></li>", file, file);
+        let ext = file.split('.').last().unwrap_or("").to_lowercase();
+        let is_video = video_extensions.contains(&ext.as_str());
+        html += &File::file_preview(&file, &file, is_video);
+        if is_video {
+            videos.push(file);
+        }
     }
 
     html += "</ul></div>";
+    if !videos.is_empty() {
+        html += "<div class='card mt-4'><div class='card-header'>Videos</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
+        for video in videos {
+            html += &File::video_preview("", &video);
+        }
+        html += "</div></div></div>";
+    }
 
     HttpResponse::Ok().content_type("text/html").body(html)
 }
