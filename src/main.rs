@@ -11,14 +11,16 @@ use std::env;
 use sea_orm::DatabaseConnection;
 use std::path::PathBuf;
 use std::process::Command;
-use std::fs::File;
-use std::io::BufReader;
 use controllers::login::is_logged_in;
 use utils::args::handle_args;
 use utils::database::get_ffmpeg_path;
 use utils::ssl::get_certificates;
 use utils::redirect::redirect_to_https;
 
+use std::fs::File;
+use std::io::BufReader;
+use rustls::ServerConfig;
+use rustls_pemfile::{certs, pkcs8_private_keys};
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -29,6 +31,24 @@ struct LoginForm {
 struct AppState {
     folder: PathBuf,
     db: DatabaseConnection,
+}
+
+fn load_rustls_config(cert_path: &std::path::Path, key_path: &std::path::Path) -> ServerConfig {
+    let mut cert_reader = BufReader::new(File::open(cert_path).expect("Cannot open cert file"));
+    let cert_chain = certs(&mut cert_reader)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("Invalid certificate(s)");
+
+    let mut key_reader = BufReader::new(File::open(key_path).expect("Cannot open key file"));
+    let mut keys = pkcs8_private_keys(&mut key_reader)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("Invalid private key");
+    let key = keys.remove(0);
+
+    ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert_chain, rustls::pki_types::PrivateKeyDer::Pkcs8(key))
+        .expect("Bad cert/key pair")
 }
 
 #[actix_web::main]
@@ -64,9 +84,8 @@ async fn main() {
         eprintln!("Failed to prepare certificates: {}", e);
         std::process::exit(1);
     });
-    let _cert_file = &mut BufReader::new(File::open(&cert_path).unwrap());
-    let _key_file = &mut BufReader::new(File::open(&key_path).unwrap());
 
+    let tls_config = load_rustls_config(&cert_path, &key_path);
 
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
@@ -79,9 +98,9 @@ async fn main() {
             .wrap(
                 SessionMiddleware::builder(
                     actix_session::storage::CookieSessionStore::default(),
-                    Key::from(&[0; 64]),
+                    Key::from(&[0; 64]), // left exactly as you had it
                 )
-                .cookie_secure(false)
+                .cookie_secure(true)
                 .build(),
             )
             .configure(controllers::clips::clips_routes)
@@ -92,32 +111,22 @@ async fn main() {
             .configure(controllers::files::files_routes) // Must be last.
     });
 
-    // Keep this to report binding errors clearly.
-    let https_server = match https_server.bind(("0.0.0.0", 80)) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
-            std::process::exit(1);
-        }
-    };
-    
-    let https_server = https_server.run();
+    // HTTPS listener
+    let https = https_server
+        .bind_rustls_0_23(("0.0.0.0", 443), tls_config)
+        .expect("Failed to bind to 443")
+        .run();
 
-    // // HTTP server for redirects
-    // let http_server = HttpServer::new(|| {
-    //     App::new().route("{_:.*}", web::get().to(redirect_to_https))
-    // })
-    // .bind("0.0.0.0:80");
-    // let http_server = match http_server {
-    //     Ok(s) => s,
-    //     Err(e) => {
-    //         eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
-    //         std::process::exit(1);
-    //     }
-    // };
-    // let http_server = http_server.run();
+    // HTTP server for redirects
+    let http = HttpServer::new(|| {
+        App::new().default_service(web::to(redirect_to_https))
+    })
+    .bind(("0.0.0.0", 80))
+    .expect("Failed to bind to 80")
+    .run();
 
-    // // Use `future::join` if you're using the `futures` crate to run both servers concurrently.
-    // let (_https_result, _http_result) = futures::future::join(https_server, http_server).await;
-
+    if let Err(e) = tokio::try_join!(https, http) {
+        eprintln!("Server error: {}", e);
+        std::process::exit(1);
+    }
 }
