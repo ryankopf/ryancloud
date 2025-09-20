@@ -15,6 +15,7 @@ use controllers::login::is_logged_in;
 use utils::args::handle_args;
 use utils::database::get_ffmpeg_path;
 use utils::ssl::get_certificates;
+use utils::redirect::redirect_to_https;
 
 use std::fs::File;
 use std::io::BufReader;
@@ -105,4 +106,15 @@ async fn main() {
         eprintln!("Server error: {}", e);
         std::process::exit(1);
     }
+
+    // // HTTP server for redirects
+    // let http_server = HttpServer::new(|| {
+    //     App::new().route("{_:.*}", web::get().to(redirect_to_https))
+    // })
+    // .bind("0.0.0.0:80").unwrap()
+    // .run();
+
+    // // Use `future::join` if you're using the `futures` crate to run both servers concurrently.
+    // let (_https_result, _http_result) = futures::future::join(https_server, http_server).await;
+
 }
