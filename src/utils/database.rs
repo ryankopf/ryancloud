@@ -6,7 +6,7 @@ use crate::models::settings::Entity as SettingsEntity;
 
 const DB_FILE: &str = "database.sqlite";
 
-fn project_data_dir() -> Option<PathBuf> {
+pub fn project_data_dir() -> Option<PathBuf> {
     ProjectDirs::from("com", "Ryan", "Cloud")
         .map(|proj_dirs| proj_dirs.data_dir().to_path_buf())
 }
