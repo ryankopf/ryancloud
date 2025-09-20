@@ -16,6 +16,11 @@ use utils::args::handle_args;
 use utils::database::get_ffmpeg_path;
 use utils::ssl::get_certificates;
 
+use std::fs::File;
+use std::io::BufReader;
+// use rustls::{pki_types::CertificateDer, pki_types::PrivateKeyDer, ServerConfig};
+// use rustls_pemfile::{certs, pkcs8_private_keys};
+
 #[derive(Deserialize)]
 struct LoginForm {
     username: String,
@@ -56,16 +61,13 @@ async fn main() {
     let folder = env::current_dir().unwrap();
     println!("Serving folder: {:?}", folder);
 
-    // Ensure we have certs ready (real ones if provided, otherwise dev snakeoil).
-    match get_certificates() {
-        Ok((cert, key)) => {
-            println!("Using certificate: {:?}, key: {:?}", cert, key);
-        }
-        Err(e) => {
-            eprintln!("Failed to prepare certificates: {}", e);
-            std::process::exit(1);
-        }
-    }
+    let (cert_path, key_path) = get_certificates().unwrap_or_else(|e| {
+        eprintln!("Failed to prepare certificates: {}", e);
+        std::process::exit(1);
+    });
+    let _cert_file = &mut BufReader::new(File::open(&cert_path).unwrap());
+    let _key_file = &mut BufReader::new(File::open(&key_path).unwrap());
+
 
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
