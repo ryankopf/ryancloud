@@ -11,16 +11,14 @@ use std::env;
 use sea_orm::DatabaseConnection;
 use std::path::PathBuf;
 use std::process::Command;
+use std::fs::File;
+use std::io::BufReader;
 use controllers::login::is_logged_in;
 use utils::args::handle_args;
 use utils::database::get_ffmpeg_path;
 use utils::ssl::get_certificates;
 use utils::redirect::redirect_to_https;
 
-use std::fs::File;
-use std::io::BufReader;
-// use rustls::{pki_types::CertificateDer, pki_types::PrivateKeyDer, ServerConfig};
-// use rustls_pemfile::{certs, pkcs8_private_keys};
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -94,23 +92,30 @@ async fn main() {
             .configure(controllers::files::files_routes) // Must be last.
     });
 
-    let server = match https_server.bind(("0.0.0.0", 80)) {
+    // Keep this to report binding errors clearly.
+    let https_server = match https_server.bind(("0.0.0.0", 80)) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
             std::process::exit(1);
         }
     };
-
     
-    let https_server = server.run();
+    let https_server = https_server.run();
 
     // // HTTP server for redirects
     // let http_server = HttpServer::new(|| {
     //     App::new().route("{_:.*}", web::get().to(redirect_to_https))
     // })
-    // .bind("0.0.0.0:80").unwrap()
-    // .run();
+    // .bind("0.0.0.0:80");
+    // let http_server = match http_server {
+    //     Ok(s) => s,
+    //     Err(e) => {
+    //         eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
+    //         std::process::exit(1);
+    //     }
+    // };
+    // let http_server = http_server.run();
 
     // // Use `future::join` if you're using the `futures` crate to run both servers concurrently.
     // let (_https_result, _http_result) = futures::future::join(https_server, http_server).await;
