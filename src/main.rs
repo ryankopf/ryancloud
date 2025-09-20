@@ -72,7 +72,7 @@ async fn main() {
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
 
-    let http_server = HttpServer::new(move || {
+    let https_server = HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .app_data(db_data.clone())
@@ -93,7 +93,7 @@ async fn main() {
             .configure(controllers::files::files_routes) // Must be last.
     });
 
-    let server = match http_server.bind(("0.0.0.0", 80)) {
+    let server = match https_server.bind(("0.0.0.0", 80)) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Failed to bind to 0.0.0.0:80: {}", e);
