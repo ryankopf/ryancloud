@@ -102,10 +102,8 @@ async fn main() {
         }
     };
 
-    if let Err(e) = server.run().await {
-        eprintln!("Server error: {}", e);
-        std::process::exit(1);
-    }
+    
+    let https_server = server.run();
 
     // // HTTP server for redirects
     // let http_server = HttpServer::new(|| {
