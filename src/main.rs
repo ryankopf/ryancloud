@@ -2,18 +2,19 @@ mod controllers;
 mod models;
 mod utils;
 use actix_web::{web, App, HttpServer};
-use actix_session::SessionMiddleware;
 use actix_web::cookie::Key;
+use actix_web::middleware::Logger;
+use actix_session::SessionMiddleware;
+use dotenvy::from_path;
 use serde::Deserialize;
 use std::env;
 use sea_orm::DatabaseConnection;
 use std::path::PathBuf;
-use controllers::login::is_logged_in;
-use actix_web::middleware::Logger;
-use dotenvy::from_path; // Updated to use dotenvy for environment variable loading
 use std::process::Command;
+use controllers::login::is_logged_in;
 use utils::args::handle_args;
 use utils::database::get_ffmpeg_path;
+use utils::ssl::get_certificates;
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -55,6 +56,17 @@ async fn main() {
     let folder = env::current_dir().unwrap();
     println!("Serving folder: {:?}", folder);
 
+    // Ensure we have certs ready (real ones if provided, otherwise dev snakeoil).
+    match get_certificates() {
+        Ok((cert, key)) => {
+            println!("Using certificate: {:?}, key: {:?}", cert, key);
+        }
+        Err(e) => {
+            eprintln!("Failed to prepare certificates: {}", e);
+            std::process::exit(1);
+        }
+    }
+
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
 
@@ -69,7 +81,7 @@ async fn main() {
                     Key::from(&[0; 64]),
                 )
                 .cookie_secure(false)
-                .build()
+                .build(),
             )
             .configure(controllers::clips::clips_routes)
             .configure(controllers::login::login_routes)
