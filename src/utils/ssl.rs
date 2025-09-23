@@ -43,6 +43,25 @@ pub fn ensure_dev_certificates() -> std::io::Result<(PathBuf, PathBuf)> {
 
 /// Returns the paths to either real cert/key (if present) or the dev cert/key (ensured).
 pub fn get_certificates() -> std::io::Result<(PathBuf, PathBuf)> {
+    let le_cert = PathBuf::from("/etc/letsencrypt/live/media.aiowa.com/fullchain.pem");
+    let le_key = PathBuf::from("/etc/letsencrypt/live/media.aiowa.com/privkey.pem");
+    if le_cert.exists() && le_key.exists() {
+        return Ok((le_cert, le_key));
+    }
+
+    if let Ok(cert_path_env) = std::env::var("CERT_PATH") {
+        let base = PathBuf::from(cert_path_env);
+        let candidates = [
+            (base.join("fullchain.pem"), base.join("privkey.pem")),
+            (base.join("cert.pem"), base.join("key.pem")),
+        ];
+        for (cert, key) in candidates {
+            if cert.exists() && key.exists() {
+                return Ok((cert, key));
+            }
+        }
+    }
+
     let data_dir = project_data_dir().ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::NotFound, "No project data dir available")
     })?;
