@@ -30,12 +30,12 @@ pub async fn index(
                     .map(|clip| {
                         // Build the video src as /{videopath}/segments/{clip_filename}
                         let src = if !videopath.is_empty() {
-                            format!("/{}/segments/{}", videopath, clip.clip_filename)
+                            format!("/{}/segments/thumbs/{}", videopath, clip.clip_filename)
                         } else {
-                            format!("/segments/{}", clip.clip_filename)
+                            format!("/segments/thumbs/{}", clip.clip_filename)
                         };
                         format!(
-                            "<div><b>{}</b><p>{}</p><video src='{}' controls class='w-100'></video></div>",
+                            "<div><b>{}</b><p>{}</p><img src='{}' class='w-100' onclick='replaceMe();return false;'></div>",
                             clip.name.unwrap_or_else(|| "Untitled".to_string()),
                             clip.description.unwrap_or_else(|| "No description available.".to_string()),
                             src,
