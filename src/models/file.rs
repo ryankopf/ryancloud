@@ -14,14 +14,19 @@ impl File {
     }
 
     pub fn file_preview(link: &str, file_name: &str, is_video: bool) -> String {
-        let video_link = if is_video {
-            format!(" <a href='/videos{}'>🎬</a>", link)
+        let main_link = if is_video {
+            format!("/videos{}", link)
+        } else {
+            link.to_string()
+        };
+        let extra_link = if is_video {
+            format!(" <a href='{}'>🎬</a>", link)
         } else {
             "".to_string()
         };
         format!(
             "<li class='list-group-item'><a href='{}'>{}</a>{}</li>",
-            link, file_name, video_link
+            main_link, file_name, extra_link
         )
     }
 
