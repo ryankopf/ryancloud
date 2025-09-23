@@ -1,9 +1,9 @@
+use sea_orm::DatabaseConnection;
 use actix_web::{web, HttpResponse, Result};
 use actix_web::Error as ActixError;
 use crate::models::user::ActiveModel;
 use sea_orm::{Set, ActiveModelTrait};
 use bcrypt;
-use crate::AppState;
 use crate::LoginForm;
 
 // Signup form (GET)
@@ -22,7 +22,7 @@ pub async fn signup_form() -> HttpResponse {
 
 // Signup handler (POST)
 pub async fn signup(
-    data: web::Data<AppState>,
+    db: web::Data<DatabaseConnection>,
     form: web::Form<LoginForm>,
 ) -> Result<HttpResponse, ActixError> {
     let password_hash = bcrypt::hash(&form.password, bcrypt::DEFAULT_COST).unwrap();
@@ -32,7 +32,7 @@ pub async fn signup(
         access_level: Set("None".to_string()),
         ..Default::default()
     };
-    match user.insert(&data.db).await {
+    match user.insert(db.get_ref()).await {
         Ok(_) => Ok(HttpResponse::Found().append_header(("Location", "/login")).finish()),
         Err(e) => Ok(HttpResponse::InternalServerError().body(format!("Error: {}", e))),
     }
