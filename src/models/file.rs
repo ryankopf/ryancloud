@@ -48,10 +48,26 @@ impl File {
     }
 
     pub fn clip_video_preview(clip: &crate::models::clip::Model) -> String {
+        let dir = std::path::Path::new(&clip.source_filename)
+            .parent()
+            .map(|p| p.display().to_string())
+            .unwrap_or_default();
+        let segments_path = if !dir.is_empty() {
+            format!("/{}/segments/{}", dir, clip.clip_filename)
+        } else {
+            format!("/segments/{}", clip.clip_filename)
+        };
+        let thumb_path = if !dir.is_empty() {
+            format!("/{}/segments/thumbs/{}.webp", dir, clip.clip_filename)
+        } else {
+            format!("/segments/thumbs/{}.webp", clip.clip_filename)
+        };
         format!(
-            "<a href='/segments/{clip_filename}' style='max-width:250px;display:inline-block;' class='video_preview'>\
-            <img src='/segments/thumbs/{clip_filename}.webp' class='img-fluid rounded border' alt='{clip_filename}' style='width:100%;'>\
+            "<a href='{segments_path}' style='max-width:250px;display:inline-block;' class='video_preview'>\
+            <img src='{thumb_path}' class='img-fluid rounded border' alt='{clip_filename}' style='width:100%;'>\
             <div class='text-center text-white position-absolute mx-auto px-2 filename'>{clip_filename} ({start}-{end})</div></a>",
+            segments_path = segments_path,
+            thumb_path = thumb_path,
             clip_filename = clip.clip_filename,
             start = clip.start,
             end = clip.end,
