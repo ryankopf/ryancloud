@@ -175,6 +175,7 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
     html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
 
     let mut video_files = Vec::new();
+    let mut dir_entries: Vec<(String, String)> = Vec::new(); // (link, file_name)
 
     match fs::read_dir(target) {
         Ok(entries) => {
@@ -185,6 +186,12 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                 } else {
                     format!("/{}/{}", subpath, file_name)
                 };
+
+                // Defer directories so they render last
+                if entry.path().is_dir() {
+                    dir_entries.push((link.clone(), file_name.clone()));
+                    continue;
+                }
 
                 // Check if the file is a video
                 let is_video = entry
@@ -197,11 +204,6 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                 if is_video {
                     video_files.push(file_name.clone());
                     html += &crate::models::file::File::file_preview(&link, &file_name, true);
-                    // html += &format!(
-                    //     "<li class='list-group-item'><a href='{link}'>{file_name}</a> <a href='/videos{link}'>🎬</a></li>",
-                    //     link = link,
-                    //     file_name = file_name
-                    // );
                 } else {
                     html += &crate::models::file::File::file_preview(&link, &file_name, false);
                 }
@@ -210,6 +212,11 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         Err(e) => {
             html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
         }
+    }
+
+    // Append directories after files
+    for (link, file_name) in dir_entries {
+        html += &crate::models::file::File::file_preview(&link, &file_name, false);
     }
 
     html += "</ul></div>";
