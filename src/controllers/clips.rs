@@ -12,6 +12,9 @@ pub async fn index(
     db: web::Data<DatabaseConnection>,
 ) -> HttpResponse {
     let video_path_str = video_path.display().to_string();
+    let video_path_obj = PathBuf::from(&video_path_str);
+    let videopath = video_path_obj.parent().map(|p| p.display().to_string()).unwrap_or_default();
+    // let filename = video_path_obj.file_name().map(|f| f.to_string_lossy().to_string()).unwrap_or_default();
 
     // Fetch all clips associated with the given video path
     let clips = clip::Entity::find()
@@ -25,11 +28,17 @@ pub async fn index(
                 clips
                     .into_iter()
                     .map(|clip| {
+                        // Build the video src as /{videopath}/segments/{clip_filename}
+                        let src = if !videopath.is_empty() {
+                            format!("/{}/segments/{}", videopath, clip.clip_filename)
+                        } else {
+                            format!("/segments/{}", clip.clip_filename)
+                        };
                         format!(
-                            "<div><b>{}</b><p>{}</p><video src='/segments/{}' controls class='w-100'></video></div>",
+                            "<div><b>{}</b><p>{}</p><video src='{}' controls class='w-100'></video></div>",
                             clip.name.unwrap_or_else(|| "Untitled".to_string()),
                             clip.description.unwrap_or_else(|| "No description available.".to_string()),
-                            clip.clip_filename,
+                            src,
                         )
                     })
                     .collect::<String>()
