@@ -192,6 +192,15 @@
         console.error("Error saving clip:", err);
       }
     }
+    function replaceImgWithVideo() {
+      const img = event.target;
+      const newSrc = img.src.replace('/thumbs/', '/');
+      const video = document.createElement('video');
+      video.src = newSrc;
+      video.controls = true;
+      video.className = 'w-100';
+      img.replaceWith(video);
+    }
 
     function renderMarkers() {
       markersEl.innerHTML = "";
