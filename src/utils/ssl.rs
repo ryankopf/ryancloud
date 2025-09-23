@@ -48,6 +48,7 @@ pub fn get_certificates() -> std::io::Result<(PathBuf, PathBuf)> {
     if le_cert.exists() && le_key.exists() {
         return Ok((le_cert, le_key));
     }
+    
 
     if let Ok(cert_path_env) = std::env::var("CERT_PATH") {
         let base = PathBuf::from(cert_path_env);
