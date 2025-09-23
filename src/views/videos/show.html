@@ -194,7 +194,7 @@
     }
     function replaceImgWithVideo() {
       const img = event.target;
-      const newSrc = img.src.replace('/thumbs/', '/');
+      const newSrc = img.src.replace('/thumbs/', '/').replace('.webp', '');
       const video = document.createElement('video');
       video.src = newSrc;
       video.controls = true;
