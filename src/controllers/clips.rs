@@ -30,9 +30,9 @@ pub async fn index(
                     .map(|clip| {
                         // Build the video src as /{videopath}/segments/{clip_filename}
                         let src = if !videopath.is_empty() {
-                            format!("/{}/segments/thumbs/{}", videopath, clip.clip_filename)
+                            format!("/{}/segments/thumbs/{}.webp", videopath, clip.clip_filename)
                         } else {
-                            format!("/segments/thumbs/{}", clip.clip_filename)
+                            format!("/segments/thumbs/{}.webp", clip.clip_filename)
                         };
                         format!(
                             "<div><b>{}</b><p>{}</p><img src='{}' class='w-100' onclick='replaceMe();return false;'></div>",
