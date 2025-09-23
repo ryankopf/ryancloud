@@ -21,7 +21,7 @@ pub fn verify_password(hash: &str, password: &str) -> bool {
 
 // Login handler
 pub async fn login(
-    db: web::Data<DatabaseConnection>, // Use DatabaseConnection directly
+    db: web::Data<DatabaseConnection>,
     session: Session,
     form: web::Form<LoginForm>,
 ) -> Result<HttpResponse, Error> {
