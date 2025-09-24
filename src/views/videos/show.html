@@ -111,6 +111,14 @@
   <div id="clipmaker-root"></div>
 
   <script>
+    function jumpToPoint(ms) {
+      const video = document.getElementById('video');
+      if (video && typeof ms === 'number') {
+        video.currentTime = ms / 1000;
+        video.focus();
+      }
+      return false;
+    }
     const video = document.getElementById('video');
     const markersEl = document.getElementById('markers');
     const clipmakerRoot = document.getElementById('clipmaker-root');

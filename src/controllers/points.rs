@@ -35,13 +35,13 @@ pub async fn index(
 						let h = total_minutes / 60;
 						let formatted_time = format!("{:02}:{:02}:{:02}:{:03}", h, m, s, ms);
 						let time_anchor = format!(
-							"<a href=\"#\" onclick=\"jumpToPoint({})\">{}</a>",
+							"<a href=\"#\" onclick=\"jumpToPoint({});return false;\">{}</a>",
 							total_ms, formatted_time
 						);
 						format!(
-							"<div><b>{}</b> <span>{}</span></div>",
-							point.name.unwrap_or_else(|| "Untitled".to_string()),
-							time_anchor
+							"<div>{} {}</div>",
+							time_anchor,
+							point.name.unwrap_or_else(|| "Untitled".to_string())
 						)
 					})
 					.collect::<String>()
