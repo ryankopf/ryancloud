@@ -45,12 +45,19 @@ pub async fn get_database() -> Result<DatabaseConnection, DbErr> {
             CREATE_SETTINGS_TABLE.to_string(),
         )).await?;
 
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_POINTS_TABLE.to_string(),
+        )).await?;
+
         return Ok(db);
     }
 
     // Connect to the existing database
     let db_url = format!("sqlite://{}", db_path.to_string_lossy());
-    Database::connect(&db_url).await
+    let db = Database::connect(&db_url).await?;
+
+    Ok(db)
 }
 
 const CREATE_USERS_TABLE: &str = r#"
@@ -77,6 +84,14 @@ const CREATE_SETTINGS_TABLE: &str = r#"
 CREATE TABLE settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ffmpeg_path TEXT NOT NULL
+);
+"#;
+const CREATE_POINTS_TABLE: &str = r#"
+CREATE TABLE points (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_filename TEXT NOT NULL,
+    time INTEGER NOT NULL,
+    name TEXT
 );
 "#;
 

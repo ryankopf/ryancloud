@@ -1,5 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -9,9 +7,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     #[serde(skip)]
-    // pub working_directory: String,
     pub source_filename: String,
-    // pub clip_filename: String,
     pub time: i64,
     pub name: Option<String>,
 }
