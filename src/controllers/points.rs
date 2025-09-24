@@ -25,10 +25,23 @@ pub async fn index(
 				points
 					.into_iter()
 					.map(|point| {
+						// Format milliseconds to HH:MM:SS:ms
+						let total_ms = point.time;
+						let ms = total_ms % 1000;
+						let total_seconds = total_ms / 1000;
+						let s = total_seconds % 60;
+						let total_minutes = total_seconds / 60;
+						let m = total_minutes % 60;
+						let h = total_minutes / 60;
+						let formatted_time = format!("{:02}:{:02}:{:02}:{:03}", h, m, s, ms);
+						let time_anchor = format!(
+							"<a href=\"#\" onclick=\"jumpToPoint({})\">{}</a>",
+							total_ms, formatted_time
+						);
 						format!(
-							"<div><b>{}</b> <span>{} ms</span></div>",
+							"<div><b>{}</b> <span>{}</span></div>",
 							point.name.unwrap_or_else(|| "Untitled".to_string()),
-							point.time
+							time_anchor
 						)
 					})
 					.collect::<String>()
