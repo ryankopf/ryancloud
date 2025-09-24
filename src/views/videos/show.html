@@ -87,12 +87,12 @@
             class="form-control mb-3"
             placeholder="Search clips"
             name="q"
-            hx-get="/clips{{filename}}"
+            hx-get="{{filename}}/clips"
             hx-trigger="keyup changed delay:300ms"
             hx-target=".clips-list"
             hx-swap="innerHTML">
         <div class="clips-list"
-            hx-get="/clips{{filename}}"
+            hx-get="{{filename}}/clips"
             hx-trigger="load"
             hx-target="this"
             hx-swap="innerHTML">
@@ -176,7 +176,7 @@
       });
 
       try {
-        const response = await fetch(`/clips${filename}`, {
+        const response = await fetch(`${filename}/clips`, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: params.toString()

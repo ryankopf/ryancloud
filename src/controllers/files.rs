@@ -172,7 +172,39 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
     let mut html = String::new();
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
 
-    html += "<div class='card'><div class='card-header'>File List</div><ul class='list-group list-group-flush'>";
+    // Build breadcrumb navigation
+    let mut breadcrumb = String::new();
+    breadcrumb.push_str("<nav aria-label='breadcrumb'><ol class='breadcrumb mb-0'>");
+
+    // "Home" always at start
+    breadcrumb.push_str("<li class='breadcrumb-item'><a href='/'>Home</a></li>");
+
+    if !subpath.is_empty() {
+        let parts: Vec<&str> = subpath.split('/').collect();
+        let mut accumulated = String::new();
+        for (i, part) in parts.iter().enumerate() {
+            if !accumulated.is_empty() {
+                accumulated.push('/');
+            }
+            accumulated.push_str(part);
+
+            if i == parts.len() - 1 {
+                // Last part = current folder (active)
+                breadcrumb.push_str(&format!("<li class='breadcrumb-item active' aria-current='page'>{}</li>", part));
+            } else {
+                // Intermediate part = link
+                breadcrumb.push_str(&format!(
+                    "<li class='breadcrumb-item'><a href='/{}'>{}</a></li>",
+                    accumulated, part
+                ));
+            }
+        }
+    }
+
+    breadcrumb.push_str("</ol></nav>");
+
+    // Use breadcrumb as header
+    html += &format!("<div class='card'><div class='card-header'>{}</div><ul class='list-group list-group-flush'>", breadcrumb);
 
     let mut video_files = Vec::new();
     let mut dir_entries: Vec<(String, String)> = Vec::new(); // (link, file_name)
@@ -187,13 +219,11 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                     format!("/{}/{}", subpath, file_name)
                 };
 
-                // Defer directories so they render last
                 if entry.path().is_dir() {
                     dir_entries.push((link.clone(), file_name.clone()));
                     continue;
                 }
 
-                // Check if the file is a video
                 let is_video = entry
                     .path()
                     .extension()
@@ -210,18 +240,20 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
             }
         }
         Err(e) => {
-            html += &format!("<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>", target.display(), e);
+            html += &format!(
+                "<li class='list-group-item text-danger'>Error reading directory '{}': {}</li>",
+                target.display(),
+                e
+            );
         }
     }
 
-    // Append directories after files
     for (link, file_name) in dir_entries {
         html += &crate::models::file::File::file_preview(&link, &file_name, false);
     }
 
     html += "</ul></div>";
 
-    // Append video thumbnails grid
     if !video_files.is_empty() {
         html += "<div class='card mt-4'><div class='card-header'>Videos</div><div class='card-body'><div class='flex flex-wrap gap-3'>";
         for video in video_files {
@@ -230,18 +262,17 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         html += "</div></div></div>";
     }
 
-    // Add login button
     if !is_logged_in(session) {
         html += r#"<a class='btn btn-primary mt-3' href="/login">Login</a>"#;
     }
 
-    // Only show upload and create folder if logged in
     if is_logged_in(session) {
         html += ACTIONS_HTML;
     }
 
     html
 }
+
 
 const ACTIONS_HTML: &str = r#"
 <div class="actions py-4">

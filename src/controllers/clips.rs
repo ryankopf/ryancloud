@@ -6,7 +6,7 @@ use crate::models::clip;
 use crate::utils::makeclip::create_video_clip;
 use regex::Regex;
 
-#[get("/clips/{video_path:.*}")]
+#[get("{video_path:.*}/clips")]
 pub async fn index(
     video_path: web::Path<PathBuf>,
     db: web::Data<DatabaseConnection>,
@@ -66,7 +66,7 @@ pub struct ClipForm {
     pub description: Option<String>,
 }
 
-#[post("/clips/{video_path:.*}")]
+#[post("{video_path:.*}/clips")]
 pub async fn create(
     video_path: web::Path<PathBuf>,
     form: web::Form<ClipForm>,
