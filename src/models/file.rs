@@ -2,12 +2,17 @@ pub struct File;
 
 impl File {
     pub fn video_preview(subpath: &str, video: &str) -> String {
+        let thumbnail_path = if !subpath.is_empty() {
+            format!("/{}/thumbs/{}.webp", subpath, video)
+        } else {
+            format!("/thumbs/{}.webp", video)
+        };
         format!(
             "<a href='/videos/{link}' style='max-width:250px;display:inline-block;' class='video_preview'>\
-            <img src='/{subpath}/thumbs/{video}.webp' class='img-fluid rounded border' alt='{video}' style='width:100%;'>\
+            <img src='{thumbnail_path}' class='img-fluid rounded border' alt='{video}' style='width:100%;'>\
             <div class='text-center text-white position-absolute mx-auto px-2 filename'>{filename}</div></a>",
             link = if subpath.is_empty() { format!("/{}", video) } else { format!("/{}/{}", subpath, video) },
-            subpath = subpath,
+            thumbnail_path = thumbnail_path,
             video = video,
             filename = video
         )
