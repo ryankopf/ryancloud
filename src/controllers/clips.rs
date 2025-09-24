@@ -46,7 +46,7 @@ pub async fn index(
                 "<p>No clips found.</p>".to_string()
             };
             let html = format!(
-                "<html><body><h6>Clips for {}</h6>{}</body></html>",
+                "<h6>Clips for {}</h6>{}",
                 video_path_str, clips_html
             );
             HttpResponse::Ok().content_type("text/html").body(html)

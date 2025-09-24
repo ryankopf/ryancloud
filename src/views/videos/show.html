@@ -59,18 +59,20 @@
       transform: translateX(-50%);
       pointer-events: none;
     }
+    .times {
+      font-size: 0.9rem;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
   </style>
 </head>
 <body>
   <div class="container-fluid">
-    <!-- Home Icon -->
     <div class="breadcrumbs text-white bg-black" style="position: absolute; top: 10px; left: 10px; z-index: 9;">
       <a href="/" style="font-size: 16px; text-decoration: none;margin-right:10px;">🏠</a>
       {{filename}}
-      <!-- Additional breadcrumbs can be added here -->
     </div>
     <div class="row">
-      <!-- Video Section -->
       <div class="col-10 p-0">
         <div class="video-container">
           <h1 class="video-title"></h1>
@@ -81,7 +83,6 @@
           <div id="markers"></div>
         </div>
       </div>
-      <!-- Clips Sidebar -->
       <div class="col-2 clips-panel">
         <input type="text"
             class="form-control mb-3"
@@ -96,6 +97,7 @@
             hx-trigger="load"
             hx-target="this"
             hx-swap="innerHTML">
+        </div>
         <div class="points-list"
             hx-get="{{filename}}/points"
             hx-trigger="load"
@@ -114,15 +116,42 @@
     const clipmakerRoot = document.getElementById('clipmaker-root');
     const filename = "{{filename}}";
 
-    let clipState = { active: false, start: null, end: null, name: "", description: "" };
+    let clipState = {
+      active: false,
+      kind: "clip", // "clip" or "point"
+      start: null,
+      end: null,
+      name: "",
+      description: ""
+    };
+
+    function formatTime(seconds) {
+      if (seconds == null) return "--:--";
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    function renderTimes() {
+      const timesDiv = clipmakerRoot.querySelector(".times");
+      if (!timesDiv) return;
+      if (clipState.kind === "clip") {
+        timesDiv.textContent = `Start: ${formatTime(clipState.start)} | End: ${formatTime(clipState.end)}`;
+      } else if (clipState.kind === "point") {
+        timesDiv.textContent = `Time: ${formatTime(clipState.start)}`;
+      }
+    }
 
     function renderClipmakerArea() {
       if (!clipState.active) {
         clipmakerRoot.innerHTML = `
           <div class="clipmaker-area">
-            <button class="btn btn-primary w-100" onclick="startClip()">Start Clip</button>
+            <div class="d-flex gap-2">
+              <button class="btn btn-primary flex-fill" onclick="startClip()">Start Clip</button>
+              <button class="btn btn-secondary flex-fill" onclick="startPoint()">Add Point</button>
+            </div>
           </div>`;
-      } else {
+      } else if (clipState.kind === "clip") {
         const saveDisabled = (clipState.start == null || clipState.end == null) ? "disabled" : "";
         clipmakerRoot.innerHTML = `
           <div class="clipmaker-area">
@@ -131,6 +160,7 @@
                    oninput="clipState.name=this.value">
             <textarea class="form-control mb-2" placeholder="Description"
                       oninput="clipState.description=this.value">${clipState.description}</textarea>
+            <div class="times"></div>
             <div class="d-flex justify-content-between mb-2">
               <button class="btn btn-success btn-sm" onclick="setStart()">Set Start</button>
               <button class="btn btn-success btn-sm" onclick="setEnd()">Set End</button>
@@ -138,13 +168,46 @@
             </div>
             <button class="btn btn-primary w-100" onclick="saveClip()" ${saveDisabled}>Save Clip</button>
           </div>`;
+      } else if (clipState.kind === "point") {
+        const saveDisabled = (clipState.start == null) ? "disabled" : "";
+        clipmakerRoot.innerHTML = `
+          <div class="clipmaker-area">
+            <input type="text" class="form-control mb-2" placeholder="Name"
+                   value="${clipState.name}" 
+                   oninput="clipState.name=this.value">
+            <div class="times"></div>
+            <div class="d-flex justify-content-between mb-2">
+              <button class="btn btn-success btn-sm" onclick="setStart()">Set Time</button>
+              <button class="btn btn-outline-danger btn-sm" onclick="cancelClip()">Cancel</button>
+            </div>
+            <button class="btn btn-primary w-100" onclick="savePoint()" ${saveDisabled}>Save Point</button>
+          </div>`;
       }
+      renderTimes();
     }
 
     function startClip() {
-      clipState.active = true;
-      clipState.start = video.currentTime;
-      clipState.end = null;
+      clipState = {
+        active: true,
+        kind: "clip",
+        start: video.currentTime,
+        end: null,
+        name: "",
+        description: ""
+      };
+      renderClipmakerArea();
+      renderMarkers();
+    }
+
+    function startPoint() {
+      clipState = {
+        active: true,
+        kind: "point",
+        start: video.currentTime,
+        end: null,
+        name: "",
+        description: ""
+      };
       renderClipmakerArea();
       renderMarkers();
     }
@@ -162,7 +225,7 @@
     }
 
     function cancelClip() {
-      clipState = { active: false, start: null, end: null, name: "", description: "" };
+      clipState = { active: false, kind: "clip", start: null, end: null, name: "", description: "" };
       renderClipmakerArea();
       renderMarkers();
     }
@@ -176,8 +239,8 @@
       const params = new URLSearchParams({
         name: clipState.name,
         description: clipState.description,
-        start: Math.floor(clipState.start * 1000), // Convert to milliseconds
-        end: Math.floor(clipState.end * 1000)     // Convert to milliseconds
+        start: Math.floor(clipState.start * 1000),
+        end: Math.floor(clipState.end * 1000)
       });
 
       try {
@@ -187,16 +250,42 @@
           body: params.toString()
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        cancelClip(); // Reset UI
-        document.querySelector(".clips-list")?.dispatchEvent(new Event("load")); // Refresh sidebar
+        cancelClip();
+        document.querySelector(".clips-list")?.dispatchEvent(new Event("load"));
       } catch (err) {
         console.error("Error saving clip:", err);
       }
     }
+
+    async function savePoint() {
+      if (isNaN(clipState.start)) {
+        console.error("Time must be a valid number.");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        name: clipState.name,
+        time: Math.floor(clipState.start * 1000)
+      });
+
+      try {
+        const response = await fetch(`${filename}/points`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params.toString()
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        cancelClip();
+        document.querySelector(".points-list")?.dispatchEvent(new Event("load"));
+      } catch (err) {
+        console.error("Error saving point:", err);
+      }
+    }
+
     function replaceImgWithVideo() {
       const img = event.target;
       const newSrc = img.src.replace('/thumbs/', '/').replace('.webp', '');
@@ -214,9 +303,10 @@
       if (clipState.start != null) {
         const percent = clipState.start / duration;
         const x = percent * rect.width;
-        markersEl.innerHTML += `<div class="marker" style="left:${x}px;">S</div>`;
+        const label = clipState.kind === "clip" ? "S" : "P";
+        markersEl.innerHTML += `<div class="marker" style="left:${x}px;">${label}</div>`;
       }
-      if (clipState.end != null) {
+      if (clipState.end != null && clipState.kind === "clip") {
         const percent = clipState.end / duration;
         const x = percent * rect.width;
         markersEl.innerHTML += `<div class="marker" style="left:${x}px; background: blue;">E</div>`;
