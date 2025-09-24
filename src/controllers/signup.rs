@@ -4,7 +4,7 @@ use actix_web::Error as ActixError;
 use crate::models::user::ActiveModel;
 use sea_orm::{Set, ActiveModelTrait};
 use bcrypt;
-use crate::LoginForm;
+use crate::controllers::login::LoginForm;
 
 // Signup form (GET)
 pub async fn signup_form() -> HttpResponse {

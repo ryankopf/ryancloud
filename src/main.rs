@@ -8,8 +8,6 @@ use actix_session::SessionMiddleware;
 use dotenvy::from_path;
 use serde::Deserialize;
 use std::env;
-use sea_orm::DatabaseConnection;
-use std::path::PathBuf;
 use std::process::Command;
 use controllers::login::is_logged_in;
 use utils::args::handle_args;
@@ -22,16 +20,6 @@ use std::io::BufReader;
 use rustls::ServerConfig;
 use rustls_pemfile::{certs, pkcs8_private_keys};
 
-#[derive(Deserialize)]
-struct LoginForm {
-    username: String,
-    password: String,
-}
-
-struct AppState {
-    folder: PathBuf,
-    db: DatabaseConnection,
-}
 
 fn load_rustls_config(cert_path: &std::path::Path, key_path: &std::path::Path) -> ServerConfig {
     let mut cert_reader = BufReader::new(File::open(cert_path).expect("Cannot open cert file"));
@@ -104,6 +92,7 @@ async fn main() {
                 .build(),
             )
             .configure(controllers::clips::clips_routes)
+            .configure(controllers::points::points_routes)
             .configure(controllers::login::login_routes)
             .configure(controllers::search::search_routes)
             .configure(controllers::signup::signup_routes)

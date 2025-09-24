@@ -5,7 +5,7 @@ use futures_util::stream::StreamExt as _;
 use actix_files::NamedFile;
 use std::fs;
 use actix_web::Error as ActixError;
-use crate::{AppState, is_logged_in};
+use crate::is_logged_in;
 use std::path::PathBuf;
 use sea_orm::DatabaseConnection;
 
@@ -72,7 +72,7 @@ pub async fn browse(
 
 // Handle folder creation
 pub async fn create_folder(
-    data: web::Data<AppState>,
+    folder: web::Data<PathBuf>,
     form: web::Form<std::collections::HashMap<String, String>>,
     session: Session,
 ) -> Result<HttpResponse, ActixError> {
@@ -88,7 +88,7 @@ pub async fn create_folder(
     if folder_name.contains('/') || folder_name.contains('\\') || folder_name.contains("..") {
         return Ok(HttpResponse::BadRequest().body("Invalid folder name"));
     }
-    let mut target = data.folder.clone();
+    let mut target = folder.get_ref().clone();
     target = target.join(folder_name);
     if target.exists() {
         return Ok(HttpResponse::BadRequest().body("Folder already exists"));
@@ -101,7 +101,7 @@ pub async fn create_folder(
 
 // Handle file uploads
 pub async fn upload(
-    data: web::Data<AppState>,
+    folder: web::Data<PathBuf>,
     mut payload: Multipart,
     session: Session,
 ) -> Result<HttpResponse, ActixError> {
@@ -112,7 +112,7 @@ pub async fn upload(
     }
 
     let mut results = Vec::new();
-    let target_dir = &data.folder;
+    let target_dir = folder.get_ref();
 
     while let Some(item) = payload.next().await {
         let mut field = item?;

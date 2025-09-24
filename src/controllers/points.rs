@@ -61,9 +61,9 @@ pub async fn create(
 	db: web::Data<DatabaseConnection>,
 ) -> HttpResponse {
 	let source_filename = video_path.display().to_string();
-	let working_directory = video_path.parent()
-		.map(|p| p.display().to_string())
-		.unwrap_or_else(|| "".to_string());
+	// let working_directory = video_path.parent()
+	// 	.map(|p| p.display().to_string())
+	// 	.unwrap_or_else(|| "".to_string());
 
 	// Log incoming data for debugging
 	eprintln!("Received POST request for video_path: {}", source_filename);

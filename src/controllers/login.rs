@@ -1,10 +1,15 @@
 use actix_web::{web, HttpResponse, Error};
 use actix_session::Session;
 use sea_orm::{EntityTrait, QueryFilter, ColumnTrait, DatabaseConnection};
+use serde::Deserialize;
 use crate::models::user;
-use crate::LoginForm;
-// use bcrypt::{hash, verify, DEFAULT_COST};
 use bcrypt::verify;
+
+#[derive(Deserialize)]
+pub struct LoginForm {
+    pub username: String,
+    pub password: String,
+}
 
 // Serve login form (GET)
 pub async fn login_form() -> HttpResponse {
