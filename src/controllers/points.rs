@@ -38,10 +38,15 @@ pub async fn index(
 							"<a href=\"#\" onclick=\"jumpToPoint({});return false;\">{}</a>",
 							total_ms, formatted_time
 						);
+						let delete_button = format!(
+							"<a href=\"#\" onclick=\"deletePoint({});return false;\" style='margin-left:8px;color:red;text-decoration:none;font-weight:bold;'>&times;</a>",
+							point.id
+						);
 						format!(
-							"<div>{} {}</div>",
+							"<div>{} {} {}</div>",
 							time_anchor,
-							point.name.unwrap_or_else(|| "Untitled".to_string())
+							point.name.unwrap_or_else(|| "Untitled".to_string()),
+							delete_button
 						)
 					})
 					.collect::<String>()
