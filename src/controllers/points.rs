@@ -167,26 +167,24 @@ pub async fn download(
 	let output_filename = format!("point-{}.mp4", point.id);
 	let output_path = segments_dir.join(&output_filename);
 
-	// If file doesn't exist, create it
+	// If file doesn't exist, create it and wait for completion
 	if !output_path.exists() {
 		match create_point_video(&point.source_filename, point.time, &output_path.display().to_string()) {
 			Ok(_) => {
-				// File creation started, but may not be ready yet
-				// You may want to check for completion in production
+				// File creation finished, continue
 			}
 			Err(err) => {
-				eprintln!("Error spawning ffmpeg: {}", err);
+				eprintln!("Error running ffmpeg: {}", err);
 				return HttpResponse::InternalServerError().body(err);
 			}
 		}
 	}
 
-	// Serve the file (or a message if not ready)
+	// Serve the file if it exists
 	if output_path.exists() {
-		// For now, just redirect to the file path
 		let file_url = format!("/segments/{}", output_filename);
 		HttpResponse::Found().append_header(("Location", file_url)).finish()
 	} else {
-		HttpResponse::Accepted().body("Video is being generated. Please try again soon.")
+		HttpResponse::InternalServerError().body("Video file was not created.")
 	}
 }

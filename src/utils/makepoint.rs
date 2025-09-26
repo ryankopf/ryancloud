@@ -42,13 +42,17 @@ pub fn create_point_video(
 
 	println!("Running command: {} {}", ffmpeg_path, args.join(" "));
 
-	Command::new(&ffmpeg_path)
+	let status = Command::new(&ffmpeg_path)
 		.args(&args)
 		.stdin(Stdio::null())
 		.stdout(Stdio::null())
 		.stderr(Stdio::null())
-		.spawn()
+		.status()
 		.map_err(|e| format!("Failed to start ffmpeg: {}", e))?;
+
+	if !status.success() {
+		return Err(format!("ffmpeg failed with exit code: {}", status.code().unwrap_or(-1)));
+	}
 
 	Ok(output_path.to_path_buf())
 }
