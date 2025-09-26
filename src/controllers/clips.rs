@@ -35,7 +35,7 @@ pub async fn index(
                             format!("/segments/thumbs/{}.webp", clip.clip_filename)
                         };
                         format!(
-                            "<div><b>{}</b><p>{}</p><img src='{}' class='w-100' onclick='replaceImgWithVideo();return false;'></div>",
+                            "<div class='video-thumb'><b>{}</b><p>{}</p><img src='{}' class='w-100 isavideo' onclick='replaceImgWithVideo();return false;'></div>",
                             clip.name.unwrap_or_else(|| "Untitled".to_string()),
                             clip.description.unwrap_or_else(|| "No description available.".to_string()),
                             src,

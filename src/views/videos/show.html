@@ -64,6 +64,21 @@
       color: #333;
       margin-bottom: 0.5rem;
     }
+    .video-thumb {
+      position: relative;
+      display: inline-block;
+    }
+    .video-thumb::after {
+      content: "▶";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      color: white;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -296,6 +311,8 @@
 
     function replaceImgWithVideo() {
       const img = event.target;
+      const wrapper = img.closest('.video-thumb'); // find parent
+      if (wrapper) wrapper.classList.remove('video-thumb');
       const newSrc = img.src.replace('/thumbs/', '/').replace('.webp', '');
       const video = document.createElement('video');
       video.src = newSrc;
