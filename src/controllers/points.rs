@@ -151,6 +151,42 @@ pub async fn download(
 		}
 	};
 
-	// You can now do stuff with `point` here
-	HttpResponse::Ok().body(format!("Found point: {:?}", point))
+	// Determine segments directory and output filename
+	let source_path = PathBuf::from(&point.source_filename);
+	let segments_dir = source_path.parent()
+		.map(|p| p.join("segments"))
+		.unwrap_or_else(|| PathBuf::from("segments"));
+	if !segments_dir.exists() {
+		if let Err(err) = std::fs::create_dir_all(&segments_dir) {
+			eprintln!("Failed to create segments directory: {}", err);
+			return HttpResponse::InternalServerError().body("Failed to create segments directory");
+		}
+	}
+
+	// Generate output filename (point-{id}.mp4)
+	let output_filename = format!("point-{}.mp4", point.id);
+	let output_path = segments_dir.join(&output_filename);
+
+	// If file doesn't exist, create it
+	if !output_path.exists() {
+		match create_point_video(&point.source_filename, point.time, &output_path.display().to_string()) {
+			Ok(_) => {
+				// File creation started, but may not be ready yet
+				// You may want to check for completion in production
+			}
+			Err(err) => {
+				eprintln!("Error spawning ffmpeg: {}", err);
+				return HttpResponse::InternalServerError().body(err);
+			}
+		}
+	}
+
+	// Serve the file (or a message if not ready)
+	if output_path.exists() {
+		// For now, just redirect to the file path
+		let file_url = format!("/segments/{}", output_filename);
+		HttpResponse::Found().header("Location", file_url).finish()
+	} else {
+		HttpResponse::Accepted().body("Video is being generated. Please try again soon.")
+	}
 }
