@@ -164,7 +164,15 @@ pub async fn download(
 	}
 
 	// Generate output filename (point-{id}.mp4)
-	let output_filename = format!("point-{}.mp4", point.id);
+	// Sanitize the name: anything but letters and numbers removed, except spacing/underscore/comma/parenthesis which become dashes, and all lowercased
+	let raw_name = point.name.clone().unwrap_or_else(|| "untitled".to_string());
+	let sanitized_name = raw_name
+	    .to_lowercase()
+	    .replace(|c: char| c == ' ' || c == '_' || c == ',' || c == '(' || c == ')', "-")
+	    .chars()
+	    .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+	    .collect::<String>();
+	let output_filename = format!("point-{}-{}.mp4", point.id, sanitized_name);
 	let output_path = segments_dir.join(&output_filename);
 
 	// If file doesn't exist, create it and wait for completion
