@@ -8,8 +8,6 @@ pub async fn show(video_path: web::Path<PathBuf>) -> HttpResponse {
     let filename = format!("/{}", video_path.display());
     let html = SHOW_HTML.replace("{{filename}}", &filename);
 
-    println!("Trying to serve video: {}", filename);
-
     HttpResponse::Ok().content_type("text/html").body(html)
 }
 

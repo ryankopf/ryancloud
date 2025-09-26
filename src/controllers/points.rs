@@ -182,7 +182,19 @@ pub async fn download(
 
 	// Serve the file if it exists
 	if output_path.exists() {
-		let file_url = format!("/segments/{}", output_filename);
+		// Build the URL based on the relative path from the source filename
+		let mut web_path = String::from("");
+		if let Some(parent) = source_path.parent() {
+			// Remove any Windows drive letter and convert to web path
+			let rel_path = parent.strip_prefix(std::env::current_dir().unwrap_or_default()).unwrap_or(parent);
+			web_path = rel_path.to_string_lossy().replace('\\', "/");
+			if !web_path.is_empty() && !web_path.starts_with('/') {
+				web_path = format!("/{}", web_path);
+			}
+		}
+		let file_url = format!("{}/segments/{}", web_path, output_filename);
+		// Remove double slashes except for protocol
+		let file_url = file_url.replace("//", "/");
 		HttpResponse::Found().append_header(("Location", file_url)).finish()
 	} else {
 		HttpResponse::InternalServerError().body("Video file was not created.")
