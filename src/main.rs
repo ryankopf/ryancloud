@@ -6,7 +6,6 @@ use actix_web::cookie::Key;
 use actix_web::middleware::Logger;
 use actix_session::SessionMiddleware;
 use dotenvy::from_path;
-use serde::Deserialize;
 use std::env;
 use std::process::Command;
 use controllers::login::is_logged_in;

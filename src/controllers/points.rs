@@ -10,8 +10,8 @@ pub async fn index(
 	db: web::Data<DatabaseConnection>,
 ) -> HttpResponse {
 	let video_path_str = video_path.display().to_string();
-	let video_path_obj = PathBuf::from(&video_path_str);
-	let videopath = video_path_obj.parent().map(|p| p.display().to_string()).unwrap_or_default();
+	// let video_path_obj = PathBuf::from(&video_path_str);
+	// let videopath = video_path_obj.parent().map(|p| p.display().to_string()).unwrap_or_default();
 
 	// Fetch all points associated with the given video path
 	let points = point::Entity::find()
@@ -38,15 +38,21 @@ pub async fn index(
 							"<a href=\"#\" onclick=\"jumpToPoint({});return false;\">{}</a>",
 							total_ms, formatted_time
 						);
+						let download_button = format!(
+							"<a href=\"/points/download?point_id={}&start={}\" target=\"_blank\" style='margin-left:8px;color:green;text-decoration:none;font-weight:bold;'>&#x2B07;</a>",
+							point.id,
+							total_ms
+						);
 						let delete_button = format!(
 							"<a href=\"#\" onclick=\"deletePoint({});return false;\" style='margin-left:8px;color:red;text-decoration:none;font-weight:bold;'>&times;</a>",
 							point.id
 						);
 						format!(
-							"<div>{} {} {}</div>",
+							"<div>{} {} {} {}</div>",
 							time_anchor,
 							point.name.unwrap_or_else(|| "Untitled".to_string()),
-							delete_button
+							download_button,
+							delete_button,
 						)
 					})
 					.collect::<String>()
