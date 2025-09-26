@@ -11,8 +11,8 @@ pub fn create_point_video(
 	let ffmpeg_path = std::env::var("FFMPEG_PATH")
 		.map_err(|_| "FFMPEG_PATH not defined in environment".to_string())?;
 
-	let start = point_time - 3000;
-	let end = point_time + 3000;
+	let start = if point_time < 3000 { 0 } else { point_time - 3000 };
+	let end = point_time + 4000;
 	let duration = end - start;
 	if duration <= 0 {
 		return Err("Invalid clip duration".to_string());
