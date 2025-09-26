@@ -185,7 +185,7 @@ pub async fn download(
 	if output_path.exists() {
 		// For now, just redirect to the file path
 		let file_url = format!("/segments/{}", output_filename);
-		HttpResponse::Found().header("Location", file_url).finish()
+		HttpResponse::Found().append_header(("Location", file_url)).finish()
 	} else {
 		HttpResponse::Accepted().body("Video is being generated. Please try again soon.")
 	}
