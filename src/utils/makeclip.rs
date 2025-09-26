@@ -1,7 +1,7 @@
 use std::process::{Command, Stdio};
 use std::path::{Path, PathBuf};
 
-pub fn create_video_clip(
+pub fn create_clip_video(
     source: &str,
     start: i64, // Milliseconds
     end: i64,   // Milliseconds

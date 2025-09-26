@@ -3,7 +3,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use serde::Deserialize;
 use std::path::PathBuf;
 use crate::models::clip;
-use crate::utils::makeclip::create_video_clip;
+use crate::utils::makeclip::create_clip_video;
 use regex::Regex;
 
 #[get("{video_path:.*}/clips")]
@@ -129,7 +129,7 @@ pub async fn create(
             clips_dir.join(&clip_filename).display().to_string()
         })
         .unwrap_or_else(|| clip_filename.clone());
-    match create_video_clip(&source_filename, form.start, form.end, &clip_filepath) {
+    match create_clip_video(&source_filename, form.start, form.end, &clip_filepath) {
         Ok(output_path) => {
             HttpResponse::Created().body(format!("Clip creation started: {}", output_path.display()))
         }

@@ -3,6 +3,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use serde::Deserialize;
 use std::path::PathBuf;
 use crate::models::point;
+use crate::utils::makepoint::create_point_video;
 
 #[get("{video_path:.*}/points")]
 pub async fn index(
