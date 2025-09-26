@@ -52,6 +52,31 @@ impl File {
         )
     }
 
+    pub fn point_preview(point: &crate::models::point::Model) -> String {
+        // Format time as HH:MM:SS:ms
+        let total_ms = point.time;
+        let ms = (total_ms % 1000) / 10; // two digits
+        let total_seconds = total_ms / 1000;
+        let s = total_seconds % 60;
+        let total_minutes = total_seconds / 60;
+        let m = total_minutes % 60;
+        let h = total_minutes / 60;
+        let formatted_time = format!("{:02}:{:02}:{:02}:{:02}", h, m, s, ms);
+        let name = point.name.clone().unwrap_or_else(|| "Untitled".to_string());
+        format!(
+            "<li class='list-group-item'>
+            <a href='{source_filename}#t={time_seconds}'>
+            {source_filename}
+            </a> &gt; Point {id}: {name} ({formatted_time})
+            </li>",
+            source_filename = point.source_filename.clone(),
+            time_seconds = point.time as f64 / 1000.0,
+            id = point.id,
+            name = name,
+            formatted_time = formatted_time,
+        )
+    }
+
     pub fn clip_video_preview(clip: &crate::models::clip::Model) -> String {
         let dir = std::path::Path::new(&clip.source_filename)
             .parent()
@@ -78,4 +103,6 @@ impl File {
             end = clip.end,
         )
     }
+
+    
 }

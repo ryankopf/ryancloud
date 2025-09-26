@@ -54,6 +54,19 @@ pub async fn index(
     for clip in clips.iter() {
         html += &File::clip_preview(clip);
     }
+    // Search points database
+    let points = crate::models::point::Entity::find()
+        .filter(
+            crate::models::point::Column::Name.contains(&search_term)
+            .or(crate::models::point::Column::SourceFilename.contains(&search_term))
+        )
+        .all(db.get_ref())
+        .await
+        .unwrap_or_default();
+
+    for point in points.iter() {
+        html += &File::point_preview(point);
+    }
     
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
     let mut videos = Vec::new(); // Placeholder for video files if needed
@@ -83,6 +96,7 @@ pub async fn index(
         }
         html += "</div></div></div>";
     }
+    
 
     HttpResponse::Ok().content_type("text/html").body(html)
 }
