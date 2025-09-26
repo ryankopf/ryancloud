@@ -39,9 +39,8 @@ pub async fn index(
 							total_ms, formatted_time
 						);
 						let download_button = format!(
-							"<a href=\"/points/download?point_id={}&start={}\" target=\"_blank\" style='margin-left:8px;color:green;text-decoration:none;font-weight:bold;'>&#x2B07;</a>",
-							point.id,
-							total_ms
+							"<a href=\"/points/download?point_id={}\" target=\"_blank\" style='margin-left:8px;color:green;text-decoration:none;font-weight:bold;'>&#x2B07;</a>",
+							point.id
 						);
 						let delete_button = format!(
 							"<a href=\"#\" onclick=\"deletePoint({});return false;\" style='margin-left:8px;color:red;text-decoration:none;font-weight:bold;'>&times;</a>",
@@ -121,5 +120,36 @@ pub async fn create(
 
 pub fn points_routes(cfg: &mut web::ServiceConfig) {
 	cfg.service(index);
+	cfg.service(download);
 	cfg.service(create);
+}
+
+
+// Stub for the download function
+#[get("/points/download")]
+pub async fn download(
+	query: web::Query<std::collections::HashMap<String, String>>,
+	db: web::Data<DatabaseConnection>,
+) -> HttpResponse {
+	// Try to get point_id from query params
+	let point_id = match query.get("point_id") {
+		Some(id_str) => match id_str.parse::<i32>() {
+			Ok(id) => id,
+			Err(_) => return HttpResponse::BadRequest().body("Invalid point_id"),
+		},
+		None => return HttpResponse::BadRequest().body("Missing point_id"),
+	};
+
+	// Fetch the point from the database with early returns
+	let point = match point::Entity::find_by_id(point_id).one(db.get_ref()).await {
+		Ok(Some(point)) => point,
+		Ok(None) => return HttpResponse::NotFound().body("Point not found"),
+		Err(err) => {
+			eprintln!("Error fetching point: {}", err);
+			return HttpResponse::InternalServerError().body("Database error");
+		}
+	};
+
+	// You can now do stuff with `point` here
+	HttpResponse::Ok().body(format!("Found point: {:?}", point))
 }
