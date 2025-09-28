@@ -67,7 +67,7 @@ impl Model {
                 // Call the AI tagging function on output_path
                 // The AI tagging function expects a URL, so you may need to construct a URL to the image
                 // For now, assume the server is running on localhost and port 443 (HTTPS)
-                let image_url = format!("https://localhost/categorize/{}.jpg", self.id);
+                let image_url = format!("https://media.aiowa.com/categorize/{}.jpg", self.id);
                 match crate::tools::ai::tag_image(&image_url).await {
                     Ok(tags) => {
                         for tag_str in &tags.tags {
