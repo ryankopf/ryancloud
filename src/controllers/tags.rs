@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, HttpResponse};
+use actix_web::{get, post, delete, web, HttpResponse};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -25,7 +25,7 @@ pub async fn index(
 					.into_iter()
 					.map(|tag| {
 						let delete_button = format!(
-							"<a href=\"#\" onclick=\"deleteTag({});return false;\" class='text-danger ms-2 text-decoration-none'>&times;</a>",
+							"<button type='button' class='btn btn-link text-danger p-0 ms-2' hx-delete='/tags/{}' hx-target='#tags-list' hx-swap='outerHTML' aria-label='Delete'>&times;</button>",
 							tag.id
 						);
 						format!(
@@ -109,8 +109,75 @@ pub async fn create(
 		.finish()
 }
 
+#[delete("/tags/{tag_id}")]
+pub async fn delete(
+	tag_id: web::Path<i32>,
+	db: web::Data<DatabaseConnection>,
+) -> HttpResponse {
+	use sea_orm::EntityTrait;
+	use crate::models::tag::Entity as TagEntity;
+
+	// Find the tag to get its source_filename for reloading the list
+	let tag = TagEntity::find_by_id(*tag_id).one(db.get_ref()).await;
+	let source_filename = match tag {
+		Ok(Some(tag)) => tag.source_filename.clone(),
+		_ => return HttpResponse::NotFound().body("Tag not found"),
+	};
+
+	// Delete the tag
+	if let Err(err) = TagEntity::delete_by_id(*tag_id).exec(db.get_ref()).await {
+		eprintln!("Error deleting tag: {}", err);
+		return HttpResponse::InternalServerError().body("Failed to delete tag");
+	}
+
+	// Fetch all tags associated with the given video path
+	let tags = TagEntity::find()
+		.filter(tag::Column::SourceFilename.eq(source_filename.clone()))
+		.all(db.get_ref())
+		.await;
+
+	match tags {
+		Ok(tags) => {
+			let filename = std::path::Path::new(&source_filename)
+				.file_name()
+				.map(|f| f.to_string_lossy())
+				.unwrap_or_default();
+			let tags_html = if !tags.is_empty() {
+				tags
+					.into_iter()
+					.map(|tag| {
+						let delete_button = format!(
+							"<button type='button' class='btn btn-link text-danger p-0 ms-2' hx-delete='/tags/{}' hx-target='#tags-list' hx-swap='outerHTML' aria-label='Delete'>&times;</button>",
+							tag.id
+						);
+						format!(
+							"<div><span class='badge bg-info'>{}</span> {}</div>",
+							tag.tag,
+							delete_button,
+						)
+					})
+					.collect::<String>()
+			} else {
+				"<p>No tags found.</p>".to_string()
+			};
+			let html = format!(
+				"<div id='tags-list'><div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='/{}'/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'></div></div>",
+				filename,
+				tags_html,
+				source_filename.trim_start_matches('/')
+			);
+			HttpResponse::Ok().content_type("text/html").body(html)
+		}
+		Err(err) => {
+			eprintln!("Error fetching tags: {}", err);
+			HttpResponse::InternalServerError().body("Internal server error")
+		}
+	}
+}
+
 pub fn tags_routes(cfg: &mut web::ServiceConfig) {
 	cfg.service(index);
 	cfg.service(new);
 	cfg.service(create);
+	cfg.service(delete);
 }
