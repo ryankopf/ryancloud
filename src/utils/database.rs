@@ -55,6 +55,11 @@ pub async fn get_database() -> Result<DatabaseConnection, DbErr> {
             CREATE_TAGS_TABLE.to_string(),
         )).await?;
 
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_CONVERSIONS_TABLE.to_string(),
+        )).await?;
+
         return Ok(db);
     }
 
@@ -105,6 +110,16 @@ CREATE TABLE tags (
     source_filename TEXT NOT NULL,
     tag TEXT NOT NULL,
     slug TEXT NOT NULL
+);
+"#;
+pub const CREATE_CONVERSIONS_TABLE: &str = r#"
+CREATE TABLE conversions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_filename TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    time_requested BIGINT NOT NULL,
+    time_completed BIGINT,
+    status TEXT NOT NULL
 );
 "#;
 

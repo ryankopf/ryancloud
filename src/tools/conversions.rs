@@ -31,6 +31,13 @@ pub async fn process_conversion_queue(db: &DatabaseConnection) {
             Err(e) => {
               eprintln!("Error querying conversions: {}", e);
               sleep(Duration::from_secs(5)).await;
+
+              use sea_orm::{Statement, DbBackend};
+              use sea_orm::ConnectionTrait;
+              db.execute(Statement::from_string(
+                  DbBackend::Sqlite,
+                  crate::utils::database::CREATE_CONVERSIONS_TABLE.to_string(),
+              )).await.ok();
             }
         }
     }
