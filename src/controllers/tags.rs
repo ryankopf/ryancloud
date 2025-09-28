@@ -188,8 +188,8 @@ pub fn tags_routes(cfg: &mut web::ServiceConfig) {
 }
 
 const TAG_FORM_HTML: &str = r#"
-<form hx-post=\"{action_path}\" hx-target=\".tags-list\" hx-swap=\"innerHTML\" class=\"d-flex align-items-center gap-2 mt-2\">
-	<input type=\"text\" name=\"tag\" class=\"form-control form-control-sm\" placeholder=\"Enter tag\" required style=\"max-width:150px;\">
-	<button type=\"submit\" class=\"btn btn-primary btn-sm\">Add</button>
+<form hx-post="{action_path}" hx-target=".tags-list" hx-swap="innerHTML" class="d-flex align-items-center gap-2 mt-2">
+    <input type="text" name="tag" class="form-control form-control-sm" placeholder="Enter tag" required style="max-width:150px;">
+    <button type="submit" class="btn btn-primary btn-sm">Add</button>
 </form>
 "#;
