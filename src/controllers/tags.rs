@@ -25,7 +25,7 @@ pub async fn index(
 					.into_iter()
 					.map(|tag| {
 						let delete_button = format!(
-							"<a href=\"#\" onclick=\"deleteTag({});return false;\" style='margin-left:8px;color:red;text-decoration:none;font-weight:bold;'>&times;</a>",
+							"<a href=\"#\" onclick=\"deleteTag({});return false;\" class='text-danger ms-2 text-decoration-none'>&times;</a>",
 							tag.id
 						);
 						format!(
