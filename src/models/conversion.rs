@@ -41,7 +41,7 @@ impl Model {
                 use std::path::Path;
                 // Extract a frame at 1s using ffmpeg
                 let ffmpeg_path = std::env::var("FFMPEG_PATH").map_err(|_| sea_orm::DbErr::Custom("FFMPEG_PATH not defined in environment".into()))?;
-                let output_dir = Path::new("ai/conversions");
+                let output_dir = Path::new("segments/ai/conversions");
                 if !output_dir.exists() {
                     std::fs::create_dir_all(output_dir).map_err(|e| sea_orm::DbErr::Custom(format!("Failed to create output directory: {}", e)))?;
                 }

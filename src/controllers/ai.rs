@@ -41,7 +41,7 @@ pub async fn categorize_video(
 pub async fn get_categorize_jpg(
 	id: web::Path<i32>,
 ) -> actix_web::Result<NamedFile> {
-	let path = format!("ai/conversions/{}.jpg", id);
+	let path = format!("segments/ai/conversions/{}.jpg", id);
 	Ok(NamedFile::open(path)?)
 }
 
