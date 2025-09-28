@@ -40,15 +40,17 @@ impl Model {
 			.replace(|c: char| c.is_whitespace(), "-")
 			.replace(|c: char| !c.is_ascii_alphanumeric() && c != '-', "")
 	}
+}
 
-	/// Create a new tag model (id is 0 for new, will be set by DB)
+impl ActiveModel {
+	/// Create a new tag ActiveModel (id is NotSet, will be set by DB)
 	pub fn new(source_filename: String, tag: String) -> Self {
-		let slug = Self::normalize_tag(&tag);
-		Self {
-			id: 0,
-			source_filename,
-			tag,
-			slug,
+		let slug = Model::normalize_tag(&tag);
+		ActiveModel {
+			id: sea_orm::ActiveValue::NotSet,
+			source_filename: sea_orm::ActiveValue::Set(source_filename),
+			tag: sea_orm::ActiveValue::Set(tag),
+			slug: sea_orm::ActiveValue::Set(slug),
 		}
 	}
 }
