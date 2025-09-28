@@ -172,9 +172,25 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
     let mut html = String::new();
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
 
+    // Check for internal folders
+    let mut has_thumbs = false;
+    let mut has_segments = false;
+    if let Ok(entries) = fs::read_dir(target) {
+        for entry in entries.flatten() {
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            if entry.path().is_dir() {
+                if file_name == "thumbs" {
+                    has_thumbs = true;
+                } else if file_name == "segments" {
+                    has_segments = true;
+                }
+            }
+        }
+    }
+
     // Build breadcrumb navigation
     let mut breadcrumb = String::new();
-    breadcrumb.push_str("<nav aria-label='breadcrumb'><ol class='breadcrumb mb-0'>");
+    breadcrumb.push_str("<nav aria-label='breadcrumb'><div class='d-flex justify-content-between align-items-center'><ol class='breadcrumb mb-0'>");
 
     // "Home" always at start
     breadcrumb.push_str("<li class='breadcrumb-item'><a href='/'>Home</a></li>");
@@ -200,8 +216,30 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
             }
         }
     }
+    breadcrumb.push_str("</ol>");
 
-    breadcrumb.push_str("</ol></nav>");
+    // Add small links to Thumbs and Segments if present
+    let mut internal_links = String::new();
+    if has_thumbs {
+        let thumbs_link = if subpath.is_empty() {
+            "/thumbs".to_string()
+        } else {
+            format!("/{}/thumbs", subpath)
+        };
+        internal_links += &format!("<a href='{}' class='badge bg-secondary ms-2' style='font-size:0.5em;text-decoration:none;'>Thumbs</a>", thumbs_link);
+    }
+    if has_segments {
+        let segments_link = if subpath.is_empty() {
+            "/segments".to_string()
+        } else {
+            format!("/{}/segments", subpath)
+        };
+        internal_links += &format!("<a href='{}' class='badge bg-secondary ms-2' style='font-size:0.5em;text-decoration:none;'>Segments</a>", segments_link);
+    }
+    if !internal_links.is_empty() {
+        breadcrumb.push_str(&format!("<span>{}</span>", internal_links));
+    }
+    breadcrumb.push_str("</div></nav>");
 
     // Use breadcrumb as header
     html += &format!("<div class='card'><div class='card-header'>{}</div><ul class='list-group list-group-flush'>", breadcrumb);
@@ -213,6 +251,10 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         Ok(entries) => {
             for entry in entries.flatten() {
                 let file_name = entry.file_name().to_string_lossy().to_string();
+                // Skip internal folders from main list
+                if file_name == "thumbs" || file_name == "segments" {
+                    continue;
+                }
                 let link = if subpath.is_empty() {
                     format!("/{}", file_name)
                 } else {
