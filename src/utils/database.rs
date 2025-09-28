@@ -99,7 +99,7 @@ CREATE TABLE points (
     name TEXT
 );
 "#;
-const CREATE_TAGS_TABLE: &str = r#"
+pub const CREATE_TAGS_TABLE: &str = r#"
 CREATE TABLE tags (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_filename TEXT NOT NULL,

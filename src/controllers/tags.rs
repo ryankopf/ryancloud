@@ -3,6 +3,8 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use serde::Deserialize;
 use std::path::PathBuf;
 use crate::models::tag;
+use sea_orm::{DbBackend, Statement};
+use sea_orm::ConnectionTrait;
 
 #[get("{video_path:.*}/tags")]
 pub async fn index(
@@ -47,6 +49,11 @@ pub async fn index(
 		}
 		Err(err) => {
 			eprintln!("Error fetching tags: {}", err);
+      db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            crate::utils::database::CREATE_TAGS_TABLE.to_string(),
+        )).await.ok();
+
 			HttpResponse::InternalServerError().body("Internal server error")
 		}
 	}
