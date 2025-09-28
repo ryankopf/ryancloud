@@ -292,15 +292,15 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         }
     }
 
-    // Render folders first (sorted), then files (sorted)
-    for (link, file_name) in dir_entries {
-        html += &crate::models::file::File::file_preview(&link, &file_name, false);
-    }
+    // Render files first (sorted), then folders (sorted)
     for (link, file_name, is_video) in &file_entries {
         if *is_video {
             video_files.push(file_name.clone());
         }
         html += &crate::models::file::File::file_preview(link, file_name, *is_video);
+    }
+    for (link, file_name) in dir_entries {
+        html += &crate::models::file::File::file_preview(&link, &file_name, false);
     }
 
     html += "</ul></div>";
