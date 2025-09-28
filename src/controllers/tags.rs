@@ -52,6 +52,20 @@ pub async fn index(
 	}
 }
 
+// HTMX endpoint: returns a form for creating a new tag for a specific video path
+#[get("{video_path:.*}/tags/new")]
+pub async fn new_tag_form(video_path: web::Path<PathBuf>) -> HttpResponse {
+	let video_path_str = video_path.display().to_string();
+	let action_path = format!("/{}/tags", video_path_str.trim_start_matches('/'));
+	let form_html = format!(r#"
+	<form hx-post="{}" hx-target="body" hx-swap="none" class="d-flex align-items-center gap-2 mt-2">
+	    <input type="text" name="tag" class="form-control form-control-sm" placeholder="Enter tag" required style="max-width:150px;">
+	    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+	</form>
+	"#, action_path);
+	HttpResponse::Ok().content_type("text/html").body(form_html)
+}
+
 #[derive(Deserialize)]
 pub struct TagForm {
 	pub tag: String,
