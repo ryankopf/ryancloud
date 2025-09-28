@@ -39,9 +39,10 @@ pub async fn index(
 				"<p>No tags found.</p>".to_string()
 			};
 			let html = format!(
-				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0'>+ New Tag</button>",
+				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='{}/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'></div>",
 				filename,
-				tags_html
+				tags_html,
+				video_path_str.trim_start_matches('/')
 			);
 			HttpResponse::Ok().content_type("text/html").body(html)
 		}
@@ -54,7 +55,7 @@ pub async fn index(
 
 // HTMX endpoint: returns a form for creating a new tag for a specific video path
 #[get("{video_path:.*}/tags/new")]
-pub async fn new_tag_form(video_path: web::Path<PathBuf>) -> HttpResponse {
+pub async fn new(video_path: web::Path<PathBuf>) -> HttpResponse {
 	let video_path_str = video_path.display().to_string();
 	let action_path = format!("/{}/tags", video_path_str.trim_start_matches('/'));
 	let form_html = format!(r#"
@@ -106,5 +107,6 @@ pub async fn create(
 
 pub fn tags_routes(cfg: &mut web::ServiceConfig) {
 	cfg.service(index);
+	cfg.service(new);
 	cfg.service(create);
 }
