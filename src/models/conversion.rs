@@ -1,4 +1,3 @@
-use std::str::FromStr;
 impl Operation {
     pub fn from_str_case_insensitive(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
@@ -47,10 +46,34 @@ impl Model {
                 // TODO: Implement makeclip logic
             }
             Some(Operation::Categorize) => {
-                // TODO: Implement categorize logic
-                // First, FFMPEG to extract a representative frame, at 1s.
-                // Then put the image in /ai/conversions/ID.jpg
-                // Then call the AI tagging function on it.
+                use std::process::{Command, Stdio};
+                use std::path::Path;
+                // Extract a frame at 1s using ffmpeg
+                let ffmpeg_path = std::env::var("FFMPEG_PATH").map_err(|_| sea_orm::DbErr::Custom("FFMPEG_PATH not defined in environment".into()))?;
+                let output_dir = Path::new("ai/conversions");
+                if !output_dir.exists() {
+                    std::fs::create_dir_all(output_dir).map_err(|e| sea_orm::DbErr::Custom(format!("Failed to create output directory: {}", e)))?;
+                }
+                let output_path = output_dir.join(format!("{}.jpg", self.id));
+                let output_path_str = output_path.to_string_lossy().to_string();
+                let args = vec![
+                    "-ss", "1",
+                    "-i", &self.source_filename,
+                    "-frames:v", "1",
+                    "-q:v", "2",
+                    &output_path_str,
+                ];
+                let status = Command::new(&ffmpeg_path)
+                    .args(&args)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .map_err(|e| sea_orm::DbErr::Custom(format!("Failed to start ffmpeg: {}", e)))?;
+                if !status.success() {
+                    return Err(sea_orm::DbErr::Custom(format!("ffmpeg failed with exit code: {}", status.code().unwrap_or(-1))));
+                }
+                // TODO: Call the AI tagging function on output_path
                 
             }
             None => {

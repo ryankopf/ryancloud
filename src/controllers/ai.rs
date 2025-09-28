@@ -1,4 +1,5 @@
 use actix_web::{post, web, HttpResponse};
+use actix_files::NamedFile;
 use sea_orm::{ActiveModelTrait, Set, DatabaseConnection};
 use std::path::PathBuf;
 use crate::models::conversion;
@@ -36,6 +37,15 @@ pub async fn categorize_video(
 	}
 }
 
+#[actix_web::get("/categorize/{id}.jpg")]
+pub async fn get_categorize_jpg(
+	id: web::Path<i32>,
+) -> actix_web::Result<NamedFile> {
+	let path = format!("ai/conversions/{}.jpg", id);
+	Ok(NamedFile::open(path)?)
+}
+
 pub fn ai_routes(cfg: &mut web::ServiceConfig) {
 	cfg.service(categorize_video);
+	cfg.service(get_categorize_jpg);
 }
