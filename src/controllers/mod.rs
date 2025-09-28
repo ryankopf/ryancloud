@@ -1,3 +1,4 @@
+pub mod ai;
 pub mod clips;
 pub mod files;
 pub mod login;

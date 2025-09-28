@@ -1,5 +1,6 @@
 mod controllers;
 mod models;
+mod tools;
 mod utils;
 use actix_web::{web, App, HttpServer};
 use actix_web::cookie::Key;
@@ -90,6 +91,7 @@ async fn main() {
                 .cookie_secure(true)
                 .build(),
             )
+            .configure(controllers::ai::ai_routes)
             .configure(controllers::clips::clips_routes)
             .configure(controllers::points::points_routes)
             .configure(controllers::tags::tags_routes)

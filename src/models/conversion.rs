@@ -1,7 +1,8 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-// Operations: Thumbnail, Scaledown, Makeclip
+// Operations: Thumbnail, Scaledown, Makeclip, Categorize
+// Status: Pending, Running, Completed, Failed
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DeriveEntityModel)]
 #[sea_orm(table_name = "conversions")]
@@ -37,6 +38,8 @@ pub enum Operation {
     Scaledown,
     #[sea_orm(string_value = "makeclip")]
     Makeclip,
+    #[sea_orm(string_value = "categorize")]
+    Categorize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumIter, DeriveActiveEnum)]
