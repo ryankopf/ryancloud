@@ -94,7 +94,7 @@ pub async fn create(
 	// 	.unwrap_or_else(|| "".to_string());
 
 	// Log incoming data for debugging
-	eprintln!("Received POST request for video_path: {}", source_filename);
+	eprintln!("Received POST point for video_path: {}", source_filename);
 	eprintln!("Form data: time={}, name={:?}", form.time, form.name);
 
 	// Validate form data

@@ -81,7 +81,7 @@ pub async fn create(
 	let source_filename = video_path.display().to_string();
 
 	// Log incoming data for debugging
-	eprintln!("Received POST request for video_path: {}", source_filename);
+	eprintln!("Received POST tag for video_path: {}", source_filename);
 	eprintln!("Form data: tag={}", form.tag);
 
 	// Validate form data
