@@ -24,6 +24,7 @@ pub async fn index(
 
     match clips {
         Ok(clips) => {
+            let filename = video_path.file_name().map(|f| f.to_string_lossy()).unwrap_or_default();
             let clips_html = if !clips.is_empty() {
                 clips
                     .into_iter()
@@ -46,8 +47,8 @@ pub async fn index(
                 "<p>No clips found.</p>".to_string()
             };
             let html = format!(
-                "<h6>Clips for {}</h6>{}",
-                video_path_str, clips_html
+                "<div class='text-muted'>Clips for {}</div>{}",
+                filename, clips_html
             );
             HttpResponse::Ok().content_type("text/html").body(html)
         }

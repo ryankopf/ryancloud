@@ -22,6 +22,9 @@ pub async fn index(
 
 	match points {
 		Ok(points) => {
+			let filename = video_path.file_name()
+				.map(|f| f.to_string_lossy())
+				.unwrap_or_default();
 			let points_html = if !points.is_empty() {
 				points
 					.into_iter()
@@ -60,8 +63,9 @@ pub async fn index(
 				"<p>No points found.</p>".to_string()
 			};
 			let html = format!(
-				"<html><body><h6>Points for {}</h6>{}</body></html>",
-				video_path_str, points_html
+				"<div class='text-muted'>Points for {}</div>{}",
+				filename,
+				points_html
 			);
 			HttpResponse::Ok().content_type("text/html").body(html)
 		}
