@@ -42,7 +42,7 @@ pub async fn tag_image(image_url: &str) -> Result<ImageTags, String> {
     let body = serde_json::json!({
         "model": "gpt-5-nano",
         "messages": [
-            {"role": "system", "content": "You are an API that extracts descriptive tags and a short summary for images."},
+            {"role": "system", "content": "You are an API that extracts descriptive tags and a short summary for images via JSON."},
             {"role": "user", "content": format!("Generate tags and a short description for this image: {}", image_url)}
         ],
         "tools": [
