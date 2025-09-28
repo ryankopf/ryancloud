@@ -1,4 +1,4 @@
-use actix_web::{get, post, delete, web, HttpResponse};
+use actix_web::{get, post, delete, web, HttpResponse, HttpRequest};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -8,6 +8,7 @@ use crate::models::tag;
 pub async fn index(
 	video_path: web::Path<PathBuf>,
 	db: web::Data<DatabaseConnection>,
+	req: HttpRequest,
 ) -> HttpResponse {
 	let video_path_str = video_path.display().to_string();
 
@@ -16,6 +17,9 @@ pub async fn index(
 		.filter(tag::Column::SourceFilename.eq(video_path_str.clone()))
 		.all(db.get_ref())
 		.await;
+
+	// Check for 'submitted' query param
+	let show_new_form = req.query_string().contains("submitted");
 
 	match tags {
 		Ok(tags) => {
@@ -38,12 +42,18 @@ pub async fn index(
 			} else {
 				"<p>No tags found.</p>".to_string()
 			};
-			let html = format!(
-				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='/{}/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'></div>",
+			let mut html = format!(
+				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='/{}/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'>",
 				filename,
 				tags_html,
 				video_path_str.trim_start_matches('/')
 			);
+			if show_new_form {
+				let action_path = format!("/{}/tags", video_path_str.trim_start_matches('/'));
+				let form_html = TAG_FORM_HTML.replace("{action_path}", &action_path);
+				html.push_str(&form_html);
+			}
+			html.push_str("</div>");
 			HttpResponse::Ok().content_type("text/html").body(html)
 		}
 		Err(err) => {
@@ -58,12 +68,7 @@ pub async fn index(
 pub async fn new(video_path: web::Path<PathBuf>) -> HttpResponse {
 	let video_path_str = video_path.display().to_string();
 	let action_path = format!("/{}/tags", video_path_str.trim_start_matches('/'));
-	let form_html = format!(r#"
-<form hx-post="{}" hx-target=".tags-list" hx-swap="innerHTML" class="d-flex align-items-center gap-2 mt-2">
-    <input type="text" name="tag" class="form-control form-control-sm" placeholder="Enter tag" required style="max-width:150px;">
-    <button type="submit" class="btn btn-primary btn-sm">Add</button>
-</form>
-"#, action_path);
+	let form_html = TAG_FORM_HTML.replace("{action_path}", &action_path);
 	HttpResponse::Ok().content_type("text/html").body(form_html)
 }
 
@@ -102,8 +107,8 @@ pub async fn create(
 		return HttpResponse::InternalServerError().body("Failed to create tag");
 	}
 
-	// After successful insert, return a standard 303 redirect to the tags index for this video
-	let redirect_url = format!("/{}/tags", source_filename.trim_start_matches('/'));
+	// After successful insert, return a 303 redirect to the tags index for this video, with ?submitted=1
+	let redirect_url = format!("/{}/tags?submitted=1", source_filename.trim_start_matches('/'));
 	HttpResponse::SeeOther()
 		.append_header(("Location", redirect_url))
 		.finish()
@@ -181,3 +186,10 @@ pub fn tags_routes(cfg: &mut web::ServiceConfig) {
 	cfg.service(create);
 	cfg.service(delete);
 }
+
+const TAG_FORM_HTML: &str = r#"
+<form hx-post=\"{action_path}\" hx-target=\".tags-list\" hx-swap=\"innerHTML\" class=\"d-flex align-items-center gap-2 mt-2\">
+	<input type=\"text\" name=\"tag\" class=\"form-control form-control-sm\" placeholder=\"Enter tag\" required style=\"max-width:150px;\">
+	<button type=\"submit\" class=\"btn btn-primary btn-sm\">Add</button>
+</form>
+"#;
