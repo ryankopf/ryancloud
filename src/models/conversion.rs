@@ -1,14 +1,5 @@
-impl Operation {
-    pub fn from_str_case_insensitive(s: &str) -> Option<Self> {
-        match s.to_lowercase().as_str() {
-            "thumbnail" => Some(Operation::Thumbnail),
-            "scaledown" => Some(Operation::Scaledown),
-            "makeclip" => Some(Operation::Makeclip),
-            "categorize" => Some(Operation::Categorize),
-            _ => None,
-        }
-    }
-}
+use crate::models::{conversion, tag};
+use sea_orm::{ActiveModelTrait, Set};
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -73,8 +64,52 @@ impl Model {
                 if !status.success() {
                     return Err(sea_orm::DbErr::Custom(format!("ffmpeg failed with exit code: {}", status.code().unwrap_or(-1))));
                 }
-                // TODO: Call the AI tagging function on output_path
-                
+                // Call the AI tagging function on output_path
+                // The AI tagging function expects a URL, so you may need to construct a URL to the image
+                // For now, assume the server is running on localhost and port 443 (HTTPS)
+                let image_url = format!("https://localhost/categorize/{}.jpg", self.id);
+                match crate::tools::ai::tag_image(&image_url).await {
+                    Ok(tags) => {
+                        for tag_str in &tags.tags {
+                            let new_tag = tag::ActiveModel {
+                                source_filename: Set(self.source_filename.clone()),
+                                tag: Set(tag_str.clone()),
+                                slug: Set(tag::Model::normalize_tag(&tag_str)),
+                                ..Default::default()
+                            };
+                            if let Err(e) = new_tag.insert(db).await {
+                                eprintln!("Failed to insert tag '{}': {}", tag_str, e);
+                            }
+                        }
+                        // Optionally, save tags.description somewhere as well
+                        println!("AI tags: {:?}", tags);
+                        // Update conversion status to completed
+                        let mut am: conversion::ActiveModel = self.clone().into();
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        am.status = Set("completed".to_string());
+                        am.time_completed = Set(Some(now));
+                        if let Err(e) = am.update(db).await {
+                            eprintln!("Failed to update conversion status: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("AI tagging failed: {}", e);
+                        // Update conversion status to failed
+                        let mut am: conversion::ActiveModel = self.clone().into();
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        am.status = Set("failed".to_string());
+                        am.time_completed = Set(Some(now));
+                        if let Err(e) = am.update(db).await {
+                            eprintln!("Failed to update conversion status: {}", e);
+                        }
+                    }
+                }
             }
             None => {
                 // Unknown operation
@@ -111,4 +146,16 @@ pub enum Status {
     Completed,
     #[sea_orm(string_value = "failed")]
     Failed,
+}
+
+impl Operation {
+    pub fn from_str_case_insensitive(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "thumbnail" => Some(Operation::Thumbnail),
+            "scaledown" => Some(Operation::Scaledown),
+            "makeclip" => Some(Operation::Makeclip),
+            "categorize" => Some(Operation::Categorize),
+            _ => None,
+        }
+    }
 }
