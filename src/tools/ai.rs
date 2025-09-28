@@ -44,7 +44,7 @@ pub async fn tag_image(image_url: &str) -> Result<ImageTags, String> {
         "messages": [
             {
                 "role": "system",
-                "content": "You are an API that extracts descriptive tags and a short summary for images. Respond in pure JSON only."
+                "content": "You are an API that extracts descriptive tags and a short summary for images. This is so that the images can be found by relevant topic when creating travel vlog content. Respond in pure JSON only."
             },
             {
                 "role": "user",
