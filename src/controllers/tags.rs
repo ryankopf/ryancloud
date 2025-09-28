@@ -39,7 +39,7 @@ pub async fn index(
 				"<p>No tags found.</p>".to_string()
 			};
 			let html = format!(
-				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='{}/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'></div>",
+				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0' hx-get='/{}/tags/new' hx-target='#new-tag-form' hx-swap='innerHTML'>+ New</button><div id='new-tag-form' class='mt-2'></div>",
 				filename,
 				tags_html,
 				video_path_str.trim_start_matches('/')
