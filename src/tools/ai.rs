@@ -57,7 +57,7 @@ pub async fn tag_image(image_url: &str) -> Result<ImageTags, String> {
                             "tags": {
                                 "type": "array",
                                 "items": {"type": "string"},
-                                "description": "Relevant tags/keywords describing the image (e.g., people, luggage, blue hair, Narita Express, train station). If you can guess the specific location, include relevant tags (e.g., Tokyo, Japan, Narita Airport, Shinjuku Station). Provide 5-10 tags."
+                                "description": "Relevant tags/keywords describing the image (e.g., people, luggage, blue hair, Narita Express, train station). If you can guess the specific location in the image, if any, include relevant tags (e.g., Tokyo, Japan, Narita Airport, Shinjuku Station). Provide 5-10 tags."
                             },
                             "description": {
                                 "type": "string",
