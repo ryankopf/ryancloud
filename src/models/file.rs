@@ -77,6 +77,19 @@ impl File {
         )
     }
 
+    pub fn tag_preview(tag: &crate::models::tag::Model) -> String {
+        format!(
+            "<li class='list-group-item'>
+            <a href='{source_filename}'>
+            {source_filename}
+            </a> &gt; Tag {id}: {tag}
+            </li>",
+            source_filename = tag.source_filename.clone(),
+            id = tag.id,
+            tag = tag.tag.clone()
+        )
+    }
+
     pub fn clip_video_preview(clip: &crate::models::clip::Model) -> String {
         let dir = std::path::Path::new(&clip.source_filename)
             .parent()

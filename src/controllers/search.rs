@@ -67,6 +67,19 @@ pub async fn index(
     for point in points.iter() {
         html += &File::point_preview(point);
     }
+
+    // Search tags database
+    let tags = crate::models::tag::Entity::find()
+        .filter(
+            crate::models::tag::Column::Tag.contains(&search_term)
+            .or(crate::models::tag::Column::SourceFilename.contains(&search_term))
+        )
+        .all(db.get_ref())
+        .await
+        .unwrap_or_default();
+    for tag in tags.iter() {
+        html += &File::tag_preview(tag);
+    }
     
     let video_extensions = ["mp4", "avi", "mov", "mkv", "webm"];
     let mut videos = Vec::new(); // Placeholder for video files if needed
