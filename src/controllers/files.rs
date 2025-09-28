@@ -246,10 +246,18 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
 
     let mut video_files = Vec::new();
     let mut dir_entries: Vec<(String, String)> = Vec::new(); // (link, file_name)
+    let mut file_entries: Vec<(String, String, bool)> = Vec::new(); // (link, file_name, is_video)
 
     match fs::read_dir(target) {
         Ok(entries) => {
-            for entry in entries.flatten() {
+            let mut all_entries: Vec<_> = entries.flatten().collect();
+            // Sort by file_name, case-insensitive
+            all_entries.sort_by(|a, b| {
+                let a_name = a.file_name().to_string_lossy().to_lowercase();
+                let b_name = b.file_name().to_string_lossy().to_lowercase();
+                a_name.cmp(&b_name)
+            });
+            for entry in all_entries {
                 let file_name = entry.file_name().to_string_lossy().to_string();
                 // Skip internal folders from main list
                 if file_name == "thumbs" || file_name == "segments" {
@@ -264,21 +272,14 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                 if entry.path().is_dir() {
                     let display_name = format!("{}/", file_name);
                     dir_entries.push((link.clone(), display_name));
-                    continue;
-                }
-
-                let is_video = entry
-                    .path()
-                    .extension()
-                    .and_then(|ext| ext.to_str())
-                    .map(|ext| video_extensions.contains(&ext.to_lowercase().as_str()))
-                    .unwrap_or(false);
-
-                if is_video {
-                    video_files.push(file_name.clone());
-                    html += &crate::models::file::File::file_preview(&link, &file_name, true);
                 } else {
-                    html += &crate::models::file::File::file_preview(&link, &file_name, false);
+                    let is_video = entry
+                        .path()
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| video_extensions.contains(&ext.to_lowercase().as_str()))
+                        .unwrap_or(false);
+                    file_entries.push((link.clone(), file_name.clone(), is_video));
                 }
             }
         }
@@ -291,8 +292,15 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
         }
     }
 
+    // Render folders first (sorted), then files (sorted)
     for (link, file_name) in dir_entries {
         html += &crate::models::file::File::file_preview(&link, &file_name, false);
+    }
+    for (link, file_name, is_video) in &file_entries {
+        if *is_video {
+            video_files.push(file_name.clone());
+        }
+        html += &crate::models::file::File::file_preview(link, file_name, *is_video);
     }
 
     html += "</ul></div>";
