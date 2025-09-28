@@ -92,6 +92,7 @@ async fn main() {
             )
             .configure(controllers::clips::clips_routes)
             .configure(controllers::points::points_routes)
+            .configure(controllers::tags::tags_routes)
             .configure(controllers::login::login_routes)
             .configure(controllers::search::search_routes)
             .configure(controllers::signup::signup_routes)

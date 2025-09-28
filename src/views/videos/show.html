@@ -113,12 +113,18 @@
             hx-target="this"
             hx-swap="innerHTML">
         </div>
-    <div class="points-list"
-      hx-get="{{filename}}/points"
-      hx-trigger="load,refresh"
-      hx-target="this"
-      hx-swap="innerHTML">
-    </div>
+        <div class="points-list"
+          hx-get="{{filename}}/points"
+          hx-trigger="load,refresh"
+          hx-target="this"
+          hx-swap="innerHTML">
+        </div>
+        <div class="tags-list"
+          hx-get="{{filename}}/tags"
+          hx-trigger="load,refresh"
+          hx-target="this"
+          hx-swap="innerHTML">
+        </div>
       </div>
     </div>
   </div>

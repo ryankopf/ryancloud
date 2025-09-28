@@ -50,6 +50,11 @@ pub async fn get_database() -> Result<DatabaseConnection, DbErr> {
             CREATE_POINTS_TABLE.to_string(),
         )).await?;
 
+        db.execute(Statement::from_string(
+            DbBackend::Sqlite,
+            CREATE_TAGS_TABLE.to_string(),
+        )).await?;
+
         return Ok(db);
     }
 
@@ -92,6 +97,14 @@ CREATE TABLE points (
     source_filename TEXT NOT NULL,
     time INTEGER NOT NULL,
     name TEXT
+);
+"#;
+const CREATE_TAGS_TABLE: &str = r#"
+CREATE TABLE tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_filename TEXT NOT NULL,
+    tag TEXT NOT NULL,
+    slug TEXT NOT NULL
 );
 "#;
 
