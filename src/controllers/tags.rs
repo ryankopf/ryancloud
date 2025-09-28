@@ -49,11 +49,6 @@ pub async fn index(
 		}
 		Err(err) => {
 			eprintln!("Error fetching tags: {}", err);
-      db.execute(Statement::from_string(
-            DbBackend::Sqlite,
-            crate::utils::database::CREATE_TAGS_TABLE.to_string(),
-        )).await.ok();
-
 			HttpResponse::InternalServerError().body("Internal server error")
 		}
 	}
