@@ -125,6 +125,14 @@
           hx-target="this"
           hx-swap="innerHTML">
         </div>
+        <div class="categorize-result"></div>
+        <button class="btn btn-secondary mt-3 w-100"
+          hx-post="{{filename}}/categorize"
+          hx-target=".categorize-result"
+          hx-swap="innerHTML"
+          hx-indicator="#loading-indicator">
+          Categorize Video
+        </button>
       </div>
     </div>
   </div>
