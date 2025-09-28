@@ -63,7 +63,7 @@ pub async fn index(
 				"<p>No points found.</p>".to_string()
 			};
 			let html = format!(
-				"<div class='text-muted'>Points for {}</div>{}",
+				"<div class='text-muted mt-3'>Points for {}</div>{}",
 				filename,
 				points_html
 			);

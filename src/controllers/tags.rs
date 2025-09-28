@@ -39,7 +39,7 @@ pub async fn index(
 				"<p>No tags found.</p>".to_string()
 			};
 			let html = format!(
-				"<div class='text-muted'>Tags for {}</div>{}",
+				"<div class='text-muted mt-3'>Tags for {}</div>{}<button class='badge bg-primary border-0'>+ New Tag</button>",
 				filename,
 				tags_html
 			);
