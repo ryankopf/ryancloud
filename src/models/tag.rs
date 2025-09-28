@@ -1,4 +1,7 @@
 use sea_orm::entity::prelude::*;
+use sea_orm::ColumnTrait;
+use sea_orm::EntityTrait;
+use sea_orm::QueryFilter;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, DeriveEntityModel)]
@@ -18,6 +21,18 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl Model {
+	/// Check if a duplicate tag exists in the database (same slug OR tag for the same source_filename)
+	pub async fn is_duplicate(&self, db: &DatabaseConnection) -> Result<bool, sea_orm::DbErr> {
+		let found = Entity::find()
+			.filter(Column::SourceFilename.eq(&self.source_filename))
+			.filter(
+				Column::Slug.eq(&self.slug)
+				.or(Column::Tag.eq(&self.tag))
+			)
+			.one(db)
+			.await?;
+		Ok(found.is_some())
+	}
 	/// Normalize a tag string: downcase, trim, replace spaces with dashes, remove non-alphanumeric except dashes
 	pub fn normalize_tag(tag: &str) -> String {
 		tag.trim()

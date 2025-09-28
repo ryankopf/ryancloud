@@ -1,5 +1,7 @@
 use crate::models::{conversion, tag};
+use sea_orm::IntoActiveModel;
 use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::EntityTrait;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -71,12 +73,11 @@ impl Model {
                 match crate::tools::ai::tag_image(&image_url).await {
                     Ok(tags) => {
                         for tag_str in &tags.tags {
-                            let new_tag = tag::ActiveModel {
-                                source_filename: Set(self.source_filename.clone()),
-                                tag: Set(tag_str.clone()),
-                                slug: Set(tag::Model::normalize_tag(&tag_str)),
-                                ..Default::default()
-                            };
+                            let tag_model = tag::Model::new(self.source_filename.clone(), tag_str.clone());
+                            if tag_model.is_duplicate(db).await.unwrap_or(false) {
+                                continue; // Skip duplicates
+                            }
+                            let new_tag = tag_model.into_active_model();
                             if let Err(e) = new_tag.insert(db).await {
                                 eprintln!("Failed to insert tag '{}': {}", tag_str, e);
                             }
