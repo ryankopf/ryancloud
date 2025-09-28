@@ -2,5 +2,6 @@ pub mod clip;
 pub mod file;
 pub mod point;
 pub mod settings;
+pub mod tag;
 pub mod thumb;
 pub mod user;
