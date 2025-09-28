@@ -25,7 +25,7 @@ pub async fn index(
 					.into_iter()
 					.map(|tag| {
 						let delete_button = format!(
-							"<button type='button' class='btn btn-link text-danger p-0 ms-2' hx-delete='/tags/{}' hx-target='#tags-list' hx-swap='outerHTML' aria-label='Delete'>&times;</button>",
+							"<button type='button' class='btn btn-link text-danger p-0 ms-2' hx-delete='/tags/{}' hx-target='.tags-list' hx-swap='outerHTML' aria-label='Delete'>&times;</button>",
 							tag.id
 						);
 						format!(
