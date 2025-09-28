@@ -303,7 +303,7 @@
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         cancelClip();
-        document.querySelector(".points-list")?.dispatchEvent(new Event("load"));
+        htmx.trigger(document.querySelector(".points-list"), "load");
       } catch (err) {
         console.error("Error saving point:", err);
       }
