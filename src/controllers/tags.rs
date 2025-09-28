@@ -3,8 +3,6 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, Qu
 use serde::Deserialize;
 use std::path::PathBuf;
 use crate::models::tag;
-use sea_orm::{DbBackend, Statement};
-use sea_orm::ConnectionTrait;
 
 #[get("{video_path:.*}/tags")]
 pub async fn index(
