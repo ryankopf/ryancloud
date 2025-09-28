@@ -3,6 +3,7 @@ mod models;
 mod tools;
 mod utils;
 use actix_web::{web, App, HttpServer};
+use tools::conversions::process_conversion_queue;
 use actix_web::cookie::Key;
 use actix_web::middleware::Logger;
 use actix_session::SessionMiddleware;
@@ -75,6 +76,7 @@ async fn main() {
 
     let tls_config = load_rustls_config(&cert_path, &key_path);
 
+    let db_for_worker = db.clone();
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
 
@@ -116,8 +118,22 @@ async fn main() {
     .expect("Failed to bind to 80")
     .run();
 
-    if let Err(e) = tokio::try_join!(https, http) {
-        eprintln!("Server error: {}", e);
+    // Start the conversion queue processor as a background task
+    let conversion_worker = tokio::spawn(async move {
+        process_conversion_queue(&db_for_worker).await;
+    });
+
+    let (https_res, http_res, worker_res) = tokio::join!(https, http, conversion_worker);
+    if let Err(e) = https_res {
+        eprintln!("HTTPS server error: {}", e);
+        std::process::exit(1);
+    }
+    if let Err(e) = http_res {
+        eprintln!("HTTP server error: {}", e);
+        std::process::exit(1);
+    }
+    if let Err(e) = worker_res {
+        eprintln!("Conversion worker task failed: {}", e);
         std::process::exit(1);
     }
 }
