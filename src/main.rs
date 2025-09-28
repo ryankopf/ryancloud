@@ -4,6 +4,7 @@ mod tools;
 mod utils;
 use actix_web::{web, App, HttpServer};
 use tools::conversions::process_conversion_queue;
+use tokio::sync::watch;
 use actix_web::cookie::Key;
 use actix_web::middleware::Logger;
 use actix_session::SessionMiddleware;
@@ -80,6 +81,10 @@ async fn main() {
     let db_data = web::Data::new(db);
     let folder_data = web::Data::new(folder);
 
+    // Set up a shutdown signal using a watch channel
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+    let mut shutdown_tx_opt = Some(shutdown_tx);
+
     let https_server = HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
@@ -118,21 +123,58 @@ async fn main() {
     .expect("Failed to bind to 80")
     .run();
 
-    // Start the conversion queue processor as a background task
+    // Start the conversion queue processor as a background task, pass shutdown_rx
     let conversion_worker = tokio::spawn(async move {
-        process_conversion_queue(&db_for_worker).await;
+        process_conversion_queue(&db_for_worker, shutdown_rx).await;
     });
 
-    let (https_res, http_res, worker_res) = tokio::join!(https, http, conversion_worker);
-    if let Err(e) = https_res {
-        eprintln!("HTTPS server error: {}", e);
-        std::process::exit(1);
+    // Listen for shutdown signals (Ctrl+C or SIGTERM)
+    let shutdown_signal = async {
+        #[cfg(unix)]
+        {
+            use tokio::signal::unix::{signal, SignalKind};
+            let mut sigint = signal(SignalKind::interrupt()).expect("Failed to install SIGINT handler");
+            let mut sigterm = signal(SignalKind::terminate()).expect("Failed to install SIGTERM handler");
+            tokio::select! {
+                _ = sigint.recv() => {
+                    println!("Received SIGINT, shutting down...");
+                }
+                _ = sigterm.recv() => {
+                    println!("Received SIGTERM, shutting down...");
+                }
+            }
+        }
+        #[cfg(not(unix))]
+        {
+            tokio::signal::ctrl_c().await.expect("Failed to install Ctrl+C handler");
+            println!("Received Ctrl+C, shutting down...");
+        }
+    };
+
+    // Wait for any of the servers or the shutdown signal
+    tokio::select! {
+        res = https => {
+            if let Err(e) = res {
+                eprintln!("HTTPS server error: {}", e);
+                std::process::exit(1);
+            }
+        }
+        res = http => {
+            if let Err(e) = res {
+                eprintln!("HTTP server error: {}", e);
+                std::process::exit(1);
+            }
+        }
+        _ = shutdown_signal => {
+            println!("Initiating graceful shutdown...");
+            if let Some(tx) = shutdown_tx_opt.take() {
+                let _ = tx.send(true);
+            }
+        }
     }
-    if let Err(e) = http_res {
-        eprintln!("HTTP server error: {}", e);
-        std::process::exit(1);
-    }
-    if let Err(e) = worker_res {
+
+    // Wait for the conversion worker to finish
+    if let Err(e) = conversion_worker.await {
         eprintln!("Conversion worker task failed: {}", e);
         std::process::exit(1);
     }
