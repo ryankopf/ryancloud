@@ -40,49 +40,33 @@ pub async fn tag_image(image_url: &str) -> Result<ImageTags, String> {
     let api_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
 
     let body = serde_json::json!({
-        "model": "gpt-5-nano",
+        "model": "gpt-4.1-mini", // supports vision
         "messages": [
-            {"role": "system", "content": "You are an API that extracts descriptive tags and a short summary for images via JSON."},
-            {"role": "user", "content": format!("Generate tags and a short description for this image: {}", image_url)}
-        ],
-        "tools": [
             {
-                "type": "function",
-                "function": {
-                    "name": "tag_image",
-                    "description": "Extract tags and a short description for an image.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "tags": {
-                                "type": "array",
-                                "items": {"type": "string"},
-                                "description": "Relevant tags/keywords describing the image (e.g., people, luggage, blue hair, Narita Express, train station). If you can guess the specific location in the image, if any, include relevant tags (e.g., Tokyo, Japan, Narita Airport, Shinjuku Station). Provide 5-10 tags."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "One or two sentences describing the image contents."
-                            }
-                        },
-                        "required": ["tags", "description"]
-                    }
-                }
+                "role": "system",
+                "content": "You are an API that extracts descriptive tags and a short summary for images. Respond in pure JSON only."
+            },
+            {
+                "role": "user",
+                "content": [
+                    { "type": "text", "text": "Generate tags and a short description for this image." },
+                    { "type": "image_url", "image_url": { "url": image_url } }
+                ]
             }
         ],
-        "tool_choice": {"type": "function", "function": {"name": "tag_image"}},
-        "response_format": {"type": "json_object"}
+        "response_format": { "type": "json_object" }
     });
 
     let json = make_request(&api_key, body).await?;
 
-    if let Some(arg_str) = json["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"].as_str() {
-        match serde_json::from_str::<ImageTags>(arg_str) {
+    if let Some(content) = json["choices"][0]["message"]["content"].as_str() {
+        match serde_json::from_str::<ImageTags>(content) {
             Ok(parsed) => Ok(parsed),
-            Err(e) => Err(format!("Failed to parse arguments as ImageTags: {}\n{}", e, arg_str)),
+            Err(e) => Err(format!("Failed to parse model JSON as ImageTags: {}\n{}", e, content)),
         }
     } else {
         Err(format!(
-            "Could not find expected 'arguments' in response.\n{}",
+            "Could not find expected 'content' in response.\n{}",
             serde_json::to_string_pretty(&json).unwrap_or_default()
         ))
     }
