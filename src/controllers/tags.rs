@@ -59,11 +59,11 @@ pub async fn new(video_path: web::Path<PathBuf>) -> HttpResponse {
 	let video_path_str = video_path.display().to_string();
 	let action_path = format!("/{}/tags", video_path_str.trim_start_matches('/'));
 	let form_html = format!(r#"
-	<form hx-post="{}" hx-target="body" hx-swap="none" class="d-flex align-items-center gap-2 mt-2">
-	    <input type="text" name="tag" class="form-control form-control-sm" placeholder="Enter tag" required style="max-width:150px;">
-	    <button type="submit" class="btn btn-primary btn-sm">Add</button>
-	</form>
-	"#, action_path);
+<form hx-post="{}" hx-target=".tags-list" hx-swap="outerHTML" class="d-flex align-items-center gap-2 mt-2">
+    <input type="text" name="tag" class="form-control form-control-sm" placeholder="Enter tag" required style="max-width:150px;">
+    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+</form>
+"#, action_path);
 	HttpResponse::Ok().content_type("text/html").body(form_html)
 }
 
@@ -102,7 +102,11 @@ pub async fn create(
 		return HttpResponse::InternalServerError().body("Failed to create tag");
 	}
 
-	HttpResponse::Created().body("Tag created")
+	// After successful insert, return HX-Redirect header to the tags index for this video
+	let redirect_url = format!("/{}/tags", source_filename.trim_start_matches('/'));
+	HttpResponse::SeeOther()
+		.append_header(("HX-Redirect", redirect_url))
+		.finish()
 }
 
 pub fn tags_routes(cfg: &mut web::ServiceConfig) {
