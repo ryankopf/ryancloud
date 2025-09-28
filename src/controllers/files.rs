@@ -262,7 +262,8 @@ pub fn generate_files_list_html(target: &PathBuf, subpath: &str, session: &Sessi
                 };
 
                 if entry.path().is_dir() {
-                    dir_entries.push((link.clone(), file_name.clone()));
+                    let display_name = format!("{}/", file_name);
+                    dir_entries.push((link.clone(), display_name));
                     continue;
                 }
 
