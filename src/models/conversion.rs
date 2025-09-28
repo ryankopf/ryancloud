@@ -1,3 +1,15 @@
+use std::str::FromStr;
+impl Operation {
+    pub fn from_str_case_insensitive(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "thumbnail" => Some(Operation::Thumbnail),
+            "scaledown" => Some(Operation::Scaledown),
+            "makeclip" => Some(Operation::Makeclip),
+            "categorize" => Some(Operation::Categorize),
+            _ => None,
+        }
+    }
+}
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -23,7 +35,30 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl Model {
-    
+    pub async fn process(&self, db: &DatabaseConnection) -> Result<(), sea_orm::DbErr> {
+        match Operation::from_str_case_insensitive(&self.operation) {
+            Some(Operation::Thumbnail) => {
+                // TODO: Implement thumbnail generation
+            }
+            Some(Operation::Scaledown) => {
+                // TODO: Implement scaledown logic
+            }
+            Some(Operation::Makeclip) => {
+                // TODO: Implement makeclip logic
+            }
+            Some(Operation::Categorize) => {
+                // TODO: Implement categorize logic
+                // First, FFMPEG to extract a representative frame, at 1s.
+                // Then put the image in /ai/conversions/ID.jpg
+                // Then call the AI tagging function on it.
+                
+            }
+            None => {
+                // Unknown operation
+            }
+        }
+        Ok(())
+    }
 }
 
 

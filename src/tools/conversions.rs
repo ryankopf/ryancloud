@@ -17,10 +17,12 @@ pub async fn process_conversion_queue(db: &DatabaseConnection) {
             .await;
 
         match next_conversion {
-            Ok(Some(conv)) => {
+            Ok(Some(conversion)) => {
               // Call your process function (to be implemented)
-              // conversion::process(conv, db).await;
-              println!("Processing conversion id: {}", conv.id);
+              conversion.process(db).await.unwrap_or_else(|e| {
+                eprintln!("Error processing conversion id {}: {}", conversion.id, e);
+              });
+              println!("Processing conversion id: {}", conversion.id);
             }
             Ok(None) => {
               // No pending/running conversions, sleep before checking again
