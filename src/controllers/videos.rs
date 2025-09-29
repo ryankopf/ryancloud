@@ -37,39 +37,41 @@ fn get_sorted_videos_and_index(current_path: &Path) -> Option<(Vec<String>, usiz
 #[get("/videos/{video_path:.*}/next")]
 pub async fn next(_req: HttpRequest, video_path: web::Path<PathBuf>) -> impl Responder {
     let current = video_path.into_inner();
-    let abs = Path::new("").join(&current);
-    if let Some((files, idx)) = get_sorted_videos_and_index(&abs) {
+    let abs_path = Path::new("").join(&current);
+    if let Some((files, idx)) = get_sorted_videos_and_index(&abs_path) {
         let next_idx = if idx + 1 < files.len() { idx + 1 } else { idx };
         let next_file = &files[next_idx];
-        let new_path = abs.parent().unwrap_or(Path::new("")).join(next_file);
+        let new_path = abs_path.parent().unwrap_or(Path::new("")).join(next_file);
         let rel_path = new_path.strip_prefix("").unwrap_or(&new_path);
         let url = format!("/videos/{}", rel_path.display());
         return HttpResponse::Found().append_header((header::LOCATION, url)).finish();
     }
     // fallback: redirect to current
-    let url = format!("/videos/{}", abs.display());
+    let url = format!("/videos/{}", abs_path.display());
     HttpResponse::Found().append_header((header::LOCATION, url)).finish()
 }
 
 #[get("/videos/{video_path:.*}/prev")]
 pub async fn prev(_req: HttpRequest, video_path: web::Path<PathBuf>) -> impl Responder {
     let current = video_path.into_inner();
-    let abs = Path::new("").join(&current);
-    if let Some((files, idx)) = get_sorted_videos_and_index(&abs) {
+    let abs_path = Path::new("").join(&current);
+    if let Some((files, idx)) = get_sorted_videos_and_index(&abs_path) {
         let prev_idx = if idx > 0 { idx - 1 } else { idx };
         let prev_file = &files[prev_idx];
-        let new_path = abs.parent().unwrap_or(Path::new("")).join(prev_file);
+        let new_path = abs_path.parent().unwrap_or(Path::new("")).join(prev_file);
         let rel_path = new_path.strip_prefix("").unwrap_or(&new_path);
         let url = format!("/videos/{}", rel_path.display());
         return HttpResponse::Found().append_header((header::LOCATION, url)).finish();
     }
     // fallback: redirect to current
-    let url = format!("/videos/{}", abs.display());
+    let url = format!("/videos/{}", abs_path.display());
     HttpResponse::Found().append_header((header::LOCATION, url)).finish()
 }
 
 pub fn video_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(show)
+    cfg
         .service(next)
-        .service(prev);
+        .service(prev)
+        .service(show)
+        ;
 }
