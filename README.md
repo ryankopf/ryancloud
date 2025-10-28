@@ -11,4 +11,10 @@ takoyaki, walking, osaka, japan, eating, food closeup, ryan kopf
 ## TO DO
 
 * Automatic video transcriptions.
-* Add "points of interest" at time points. IE if I look at something, and we want clips of that later. IE, look at a karaoke store? Well then I can search "karaoke store".
+
+
+## ACCESS
+
+G:\Programming\sqlite\sqlite3.exe C:\Users\ryankopf\AppData\Roaming\Ryan\Cloud\data\database.sqlite
+
+sqlite3 /var/www/.local/share/cloud/database.sqlite

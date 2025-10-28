@@ -119,7 +119,8 @@ CREATE TABLE conversions (
     operation TEXT NOT NULL,
     time_requested BIGINT NOT NULL,
     time_completed BIGINT,
-    status TEXT NOT NULL
+    status TEXT NOT NULL,
+    times_tried INTEGER NOT NULL DEFAULT 1
 );
 "#;
 

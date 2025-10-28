@@ -18,6 +18,7 @@ pub struct Model {
     pub time_requested: i64,
     pub time_completed: Option<i64>,
     pub status: String,
+    pub times_tried: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
@@ -26,10 +27,133 @@ pub enum Relation {}
 impl ActiveModelBehavior for ActiveModel {}
 
 impl Model {
+    /// Request a conversion operation. Returns true if a new conversion was created, false if one already exists.
+    /// If a conversion exists but was requested over 1 hour ago, creates a new one with incremented times_tried.
+    pub async fn request_conversion(
+        db: &DatabaseConnection,
+        source_filename: String,
+        operation: String,
+    ) -> Result<bool, sea_orm::DbErr> {
+        use sea_orm::{ColumnTrait, QueryFilter};
+        
+        // Check for existing conversion with same source_filename and operation
+        let existing = Entity::find()
+            .filter(Column::SourceFilename.eq(&source_filename))
+            .filter(Column::Operation.eq(&operation))
+            .filter(
+                Column::Status.eq("pending")
+                    .or(Column::Status.eq("running"))
+            )
+            .one(db)
+            .await?;
+        
+        if let Some(existing_conversion) = existing {
+            let now = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
+            
+            let time_diff = now - existing_conversion.time_requested;
+            
+            // If less than 1 hour (3600 seconds), don't create a new one
+            if time_diff < 3600 {
+                println!("Conversion already pending/running for {} ({}), skipping", source_filename, operation);
+                return Ok(false);
+            }
+            
+            // More than 1 hour old, create a new one with incremented times_tried
+            println!("Existing conversion for {} ({}) is over 1 hour old, creating new attempt", source_filename, operation);
+            let new_conversion = ActiveModel {
+                source_filename: Set(source_filename),
+                operation: Set(operation),
+                time_requested: Set(now),
+                time_completed: Set(None),
+                status: Set("pending".to_string()),
+                times_tried: Set(existing_conversion.times_tried + 1),
+                ..Default::default()
+            };
+            
+            new_conversion.insert(db).await?;
+            return Ok(true);
+        }
+        
+        // No existing conversion, create a new one
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        
+        let new_conversion = ActiveModel {
+            source_filename: Set(source_filename),
+            operation: Set(operation),
+            time_requested: Set(now),
+            time_completed: Set(None),
+            status: Set("pending".to_string()),
+            times_tried: Set(1),
+            ..Default::default()
+        };
+        
+        new_conversion.insert(db).await?;
+        Ok(true)
+    }
+
     pub async fn process(&self, db: &DatabaseConnection) -> Result<(), sea_orm::DbErr> {
         match Operation::from_str_case_insensitive(&self.operation) {
             Some(Operation::Thumbnail) => {
-                // TODO: Implement thumbnail generation
+                use std::path::Path;
+                
+                // Get ffmpeg path from environment or database
+                let ffmpeg_path = crate::utils::database::get_ffmpeg_path(db).await
+                    .or_else(|| std::env::var("FFMPEG_PATH").ok())
+                    .ok_or_else(|| sea_orm::DbErr::Custom("FFMPEG_PATH not defined".into()))?;
+                
+                // Determine output path: source_filename -> source_filename/thumbs/filename.webp
+                let source_path = Path::new(&self.source_filename);
+                let parent = source_path.parent().ok_or_else(|| sea_orm::DbErr::Custom("Invalid source path".into()))?;
+                let file_stem = source_path.file_stem().ok_or_else(|| sea_orm::DbErr::Custom("Invalid filename".into()))?;
+                
+                let thumbs_dir = parent.join("thumbs");
+                if !thumbs_dir.exists() {
+                    std::fs::create_dir_all(&thumbs_dir).map_err(|e| sea_orm::DbErr::Custom(format!("Failed to create thumbs directory: {}", e)))?;
+                }
+                
+                let output_path = thumbs_dir.join(format!("{}.webp", file_stem.to_string_lossy()));
+                let output_path_str = output_path.to_string_lossy().to_string();
+                
+                println!("Generating thumbnail: {} -> {}", self.source_filename, output_path_str);
+                
+                // Use the Thumb::generate function
+                match crate::models::thumb::Thumb::generate(&self.source_filename, &output_path_str, &ffmpeg_path) {
+                    Ok(_) => {
+                        // Update conversion status to completed
+                        let mut am: conversion::ActiveModel = self.clone().into();
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        am.status = Set("completed".to_string());
+                        am.time_completed = Set(Some(now));
+                        if let Err(e) = am.update(db).await {
+                            eprintln!("Failed to update conversion status: {}", e);
+                        }
+                        println!("Thumbnail generated successfully: {}", output_path_str);
+                    }
+                    Err(e) => {
+                        eprintln!("Thumbnail generation failed: {}", e);
+                        // Update conversion status to failed
+                        let mut am: conversion::ActiveModel = self.clone().into();
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        am.status = Set("failed".to_string());
+                        am.time_completed = Set(Some(now));
+                        if let Err(e) = am.update(db).await {
+                            eprintln!("Failed to update conversion status: {}", e);
+                        }
+                        return Err(sea_orm::DbErr::Custom(e));
+                    }
+                }
             }
             Some(Operation::Scaledown) => {
                 // TODO: Implement scaledown logic

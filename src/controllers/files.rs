@@ -29,29 +29,31 @@ pub async fn browse(
         target = target.join(subpath);
     }
     if subpath.contains("thumbs/") && !target.exists() {
-        if let Some(parent) = target.parent() {
-            if !parent.exists() {
-                std::fs::create_dir_all(parent).expect("Failed to create thumbs directory");
-            }
-        }
-        // Remove '/thumbs/' from the path
-        // println!("Generating thumbnail for: {}", target.display());
+        // Create a conversion request for thumbnail generation
         let original_file_name = target.file_name().and_then(|n| n.to_str()).unwrap_or("")
             .replace(".webp", "");
-        let original_path = target.parent().unwrap().parent().unwrap().join(original_file_name);
-        // println!("Original file path: {}", original_path.display());
+        let original_path = target.parent().unwrap().parent().unwrap().join(&original_file_name);
+        
         if original_path.exists() {
-            let input = original_path.to_string_lossy().to_string();
-            let output = target.to_string_lossy().to_string();
-            println!("Input: {}, Output: {}", input, output);
+            use crate::models::conversion;
+            
+            let source_filename = original_path.to_string_lossy().to_string();
 
-            let ffmpeg_path = crate::utils::database::get_ffmpeg_path(db.get_ref()).await.or_else(|| std::env::var("FFMPEG_PATH").ok());
-
-            if let Some(ffmpeg_path) = ffmpeg_path {
-                crate::models::thumb::Thumb::generate(&input, &output, &ffmpeg_path);
-                return HttpResponse::Ok().body("Thumbnail generation command executed");
-            } else {
-                return HttpResponse::InternalServerError().body("FFMPEG_PATH is not set in the database");
+            match conversion::Model::request_conversion(
+                db.get_ref(),
+                source_filename.clone(),
+                "thumbnail".to_string(),
+            ).await {
+                Ok(true) => {
+                    return HttpResponse::Accepted().body("Thumbnail generation queued. Please refresh in a moment.");
+                }
+                Ok(false) => {
+                    return HttpResponse::Accepted().body("Thumbnail generation already in progress. Please check back in a moment.");
+                }
+                Err(e) => {
+                    eprintln!("Error creating thumbnail conversion: {}", e);
+                    return HttpResponse::InternalServerError().body("Failed to queue thumbnail generation");
+                }
             }
         } else {
             return HttpResponse::NotFound().body("Original file not found for thumbnail generation");
